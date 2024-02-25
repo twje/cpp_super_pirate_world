@@ -8,7 +8,7 @@ else()
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 endif()
 
-project(SFMLTemplate VERSION 1.0)
+project(SuperPirateWorld VERSION 1.0)
 
 file(WRITE ${CMAKE_SOURCE_DIR}/resources/buildnumber.txt "${PROJECT_VERSION}")
 
