@@ -3,106 +3,13 @@
 // Third party
 #include <SFML/Graphics.hpp>
 
+// Game
+#include "Settings.h"
+#include "Player.h"
+
 // Core
 #include "Core/GameObjectManager.h"
-#include "Core/Resources.h"
-#include "Core/RandomUtils.h"
-#include "Core/DrawUtils.h"
 #include "Core/LayerStack.h"
-#include "Core/RectUtils.h"
-
-//------------------------------------------------------------------------------
-constexpr uint32_t WINDOW_WIDTH = 800;
-constexpr uint32_t WINDOW_HEIGHT = 600;
-
-//------------------------------------------------------------------------------
-namespace Resources
-{    
-    constexpr char SFMLLogo[] = "1200px-SFML2.png";
-}
-
-//------------------------------------------------------------------------------
-class SMFLLogo : public GameObject
-{
-public:
-    SMFLLogo(const sf::Vector2f& position)
-        : mSprite(ResourceManager::GetInstance().LoadTexture(Resources::SFMLLogo))
-        , mSpeed(200.0f)
-    {               
-        SetOrigin(GetRectCenter(mSprite.getLocalBounds()));
-        SetScale({ 0.25f, 0.25f });
-        SetPosition(position);        
-
-        mHitbox = InflateRect(GetGlobalBounds(), -50, -40);        
-
-        float dirX = GetRandomIntegerFromList({ -1.0f, 1.0f });
-        float dirY = GetRandomIntegerFromList({ -1.0f, 1.0f });
-        mDirection = { dirX, dirY };
-    }
-
-    virtual FloatRect GetGlobalBounds() const override
-    {
-        return GetTransform().transformRect(mSprite.getLocalBounds());
-    }
-
-    virtual FloatRect GetHitbox() const override
-    {
-        return mHitbox;
-    }
-
-    virtual void Update(const sf::Time& timeslice) override
-    {                
-        sf::Vector2f delta = mDirection * mSpeed * timeslice.asSeconds();
-        MoveRect(mHitbox, delta);
-
-        if (mHitbox.left < 0)
-        {
-            mDirection.x = -mDirection.x;
-        }
-        else if (mHitbox.left + mHitbox.width > WINDOW_WIDTH)
-        {
-            mDirection.x = -mDirection.x;
-        }
-        else if (mHitbox.top < 0)
-        {
-            mDirection.y = -mDirection.y;
-        }
-        else if (mHitbox.top + mHitbox.height > WINDOW_HEIGHT)
-        {
-            mDirection.y = -mDirection.y;
-        }
-
-        SyncPositionWithHitbox();
-    }
-
-    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const override
-    {
-        sf::RenderStates statesCopy(states);
-        statesCopy.transform *= GetTransform();
-        target.draw(mSprite, statesCopy);
-    }
-
-    virtual void SetPosition(const sf::Vector2f& position) override
-    {
-        sf::Transformable& transformable = GetInternaleTransformable();
-        transformable.setPosition(position);
-        mHitbox.left = position.x - mHitbox.width / 2.0f;
-        mHitbox.top = position.y - mHitbox.height / 2.0f;
-    }
-
-private:
-    void SyncPositionWithHitbox()
-    {
-        sf::Transformable& transformable = GetInternaleTransformable();
-        sf::Vector2f center = GetRectCenter(mHitbox);
-        transformable.setPosition(center);
-    }
-
-    sf::Sprite mSprite;
-    sf::FloatRect mHitbox;
-    sf::Vector2f mDirection;
-    float mSpeed;
-};
 
 //------------------------------------------------------------------------------
 class Game : public Layer
@@ -115,10 +22,8 @@ public:
         mGameView.setCenter(sf::Vector2f(windowSize) / 2.0f);
 
         GameObjectManager& manager = GameObjectManager::Instance();       
-        SMFLLogo* logo = manager.CreateGameObject<SMFLLogo>(sf::Vector2f(windowSize) / 2.0f);
-        mAllSprites.AddGameObject(logo);  
-
-        ImportAssets();
+        Player* player = manager.CreateGameObject<Player>(sf::Vector2f());
+        mAllSprites.AddGameObject(player);
     }
 
     virtual void Resize(const sf::Vector2f& size) override
@@ -142,19 +47,11 @@ public:
         for (GameObject* obj : mAllSprites)
         {
             window.draw(*obj);
-            DrawRect<float>(window, obj->GetHitbox(), sf::Color::Green);
-            DrawRect<float>(window, obj->GetGlobalBounds(), sf::Color::Red);
         }
         return true;
     }
 
 private:
-    void ImportAssets()
-    {
-        auto foo = ResourceManager::GetInstance().LoadTexuresFromDirectory("enemies/shell/fire");
-        int x = 10;
-    }
-
     Group mAllSprites;
     sf::View mGameView;
 };

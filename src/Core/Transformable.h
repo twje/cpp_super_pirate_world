@@ -9,9 +9,14 @@
 class Tranformable
 {
 public:
+    virtual void Move(const sf::Vector2f& offset)
+    {
+        mTransformable.move(offset);
+    }
+
     virtual void SetPosition(const sf::Vector2f& position)
     {
-        mTransformable.setPosition(position);
+        mTransformable.setPosition(position);        
     }
     
     void SetOrigin(const sf::Vector2f& origin)
