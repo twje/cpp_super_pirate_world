@@ -26,7 +26,7 @@ class SMFLLogo : public GameObject
 {
 public:
     SMFLLogo(const sf::Vector2f& position)
-        : mSprite(LoadTexture(Resources::SFMLLogo))
+        : mSprite(ResourceManager::GetInstance().LoadTexture(Resources::SFMLLogo))
         , mSpeed(200.0f)
     {               
         SetOrigin(GetRectCenter(mSprite.getLocalBounds()));
@@ -116,7 +116,9 @@ public:
 
         GameObjectManager& manager = GameObjectManager::Instance();       
         SMFLLogo* logo = manager.CreateGameObject<SMFLLogo>(sf::Vector2f(windowSize) / 2.0f);
-        mAllSprites.AddGameObject(logo);
+        mAllSprites.AddGameObject(logo);  
+
+        ImportAssets();
     }
 
     virtual void Resize(const sf::Vector2f& size) override
@@ -147,6 +149,12 @@ public:
     }
 
 private:
+    void ImportAssets()
+    {
+        auto foo = ResourceManager::GetInstance().LoadTexuresFromDirectory("enemies/shell/fire");
+        int x = 10;
+    }
+
     Group mAllSprites;
     sf::View mGameView;
 };

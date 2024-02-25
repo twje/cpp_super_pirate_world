@@ -6,103 +6,81 @@
 #include <unordered_map>
 #include <iostream>
 #include <stdexcept>
-#include <filesystem>
-
-namespace fs = std::filesystem;
 
 //------------------------------------------------------------------------------
-std::unique_ptr<std::vector<sf::Texture*>> LoadTexuresFromDirectory(const std::string directory)
+ResourceManager& ResourceManager::GetInstance() 
 {
-    auto textures = std::make_unique<std::vector<sf::Texture*>>();
+    static ResourceManager instance;
+    return instance;
+}
 
-    for (const auto& entry : fs::directory_iterator(std::string(RESOURCES_PATH) + directory))
-    {
-        std::string filepath = directory + entry.path().filename().generic_string();
-        textures->push_back(&LoadTexture(filepath));
+//------------------------------------------------------------------------------
+TextureVectorPtr ResourceManager::LoadTexuresFromDirectory(const fs::path& directory)
+{
+    TextureVectorPtr textures = std::make_unique<TextureVector>();
+
+    for (const auto& filepath : fs::directory_iterator(GetResourcePath() / directory))
+    {        
+        fs::path relativePath = fs::relative(filepath.path(), GetResourcePath());
+        textures->push_back(&LoadTexture(relativePath));
     }
     return textures;
 }
 
 //------------------------------------------------------------------------------
-sf::Texture& LoadTexture(const std::string& filename)
-{
-    static std::unordered_map<std::string, sf::Texture> textureStore;
-
-    auto it = textureStore.find(filename);
-    if (it != textureStore.end())
+TextureMapPtr ResourceManager::LoadTexuresFromSubDirectory(const fs::path& directory)
+{    
+    TextureMapPtr textureMap = std::make_unique<std::unordered_map<std::string, TextureVector>>();
+    for (const auto& subDirectory : fs::directory_iterator(GetResourcePath() / directory))
     {
-        return it->second;
+        if (fs::is_directory(subDirectory.status()))
+        {
+            std::vector<sf::Texture*> textures;            
+            for (const auto& filepath : fs::directory_iterator(subDirectory.path()))
+            {     
+                fs::path relativePath = fs::relative(filepath.path(), GetResourcePath());
+                textures.push_back(&LoadTexture(relativePath.generic_string()));
+            }            
+            (*textureMap)[subDirectory.path().filename().string()] = std::move(textures);
+        }
     }
-
-    sf::Texture texture;
-    if (!texture.loadFromFile(std::string(RESOURCES_PATH) + filename))
-    {
-        throw std::runtime_error("Failed to load texture: " + filename);
-    }
-
-    auto inserted = textureStore.emplace(filename, std::move(texture));
-    return inserted.first->second;
+    return textureMap;
 }
 
 //------------------------------------------------------------------------------
-const sf::Font& LoadFont(const std::string& filename)
+sf::Texture& ResourceManager::LoadTexture(const fs::path& filename)
 {
-    static std::unordered_map<std::string, sf::Font> fontStore;
-    auto it = fontStore.find(filename);
-    if (it != fontStore.end())
-    {
-        return it->second;
-    }
-
-    sf::Font font;
-    if (!font.loadFromFile(std::string(RESOURCES_PATH) + filename))
-    {
-        throw std::runtime_error("Failed to load font: " + filename);
-    }
-
-    auto inserted = fontStore.emplace(filename, std::move(font));
-    return inserted.first->second;
+    return LoadResource<sf::Texture>(mTextureStore, filename);
 }
 
 //------------------------------------------------------------------------------
-const sf::SoundBuffer& LoadSoundBuffer(const std::string& filename)
-{
-    static std::unordered_map<std::string, sf::SoundBuffer> soundBufferStore;
-    auto it = soundBufferStore.find(filename);
-    if (it != soundBufferStore.end())
-    {
-        return it->second;
-    }
-
-    sf::SoundBuffer soundBuffer;
-    if (!soundBuffer.loadFromFile(std::string(RESOURCES_PATH) + filename))
-    {
-        throw std::runtime_error("Failed to load font: " + filename);
-    }
-
-    auto inserted = soundBufferStore.emplace(filename, std::move(soundBuffer));
-    return inserted.first->second;
+sf::Font& ResourceManager::LoadFont(const fs::path& filename)
+{    
+    return LoadResource<sf::Font>(mFontStore, filename);
 }
 
 //------------------------------------------------------------------------------
-sf::Music& LoadMusic(const std::string& filename)
-{
-    static std::unordered_map<std::string, std::unique_ptr<sf::Music>> musicStore;
+sf::SoundBuffer& ResourceManager::LoadSoundBuffer(const fs::path& filename)
+{    
+    return LoadResource<sf::SoundBuffer>(mSoundBufferStore, filename);
+}
 
-    auto it = musicStore.find(filename);
-    if (it != musicStore.end())
+//------------------------------------------------------------------------------
+sf::Music& ResourceManager::LoadMusic(const fs::path& filename)
+{    
+    auto it = mMusicStore.find(filename.string());
+    if (it != mMusicStore.end())
     {
         return *(it->second);
     }
 
-    std::unique_ptr<sf::Music> music = std::make_unique<sf::Music>();
-    if (!music->openFromFile(std::string(RESOURCES_PATH) + filename))
+    auto musicPtr = std::make_unique<sf::Music>();
+    if (!musicPtr->openFromFile(GetResourcePath() / filename))
     {
-        throw std::runtime_error("Failed to load music: " + filename);
+        throw std::runtime_error("Failed to load music: " + filename.string());
     }
 
-    auto& storedMusic = *music;
-    musicStore[filename] = std::move(music);
-
-    return storedMusic;
+    sf::Music& musicRef = *musicPtr;
+    mMusicStore.emplace(filename.string(), std::move(musicPtr));
+    return musicRef;    
 }
