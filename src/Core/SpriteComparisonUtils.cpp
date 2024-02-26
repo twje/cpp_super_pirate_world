@@ -40,10 +40,10 @@ sf::Image CreateImageFromTexture(const sf::Texture& texture, const sf::IntRect& 
 
 //------------------------------------------------------------------------------
 bool ComparePixels(const sf::Image& image1,
-    const sf::Image& image2,
-    const sf::IntRect& compareBounds,
-    const sf::Transform& inverseTransform1,
-    const sf::Transform& inverseTransform2)
+                   const sf::Image& image2,
+                   const sf::IntRect& compareBounds,
+                   const sf::Transform& inverseTransform1,
+                   const sf::Transform& inverseTransform2)
 {
     for (int32_t y = compareBounds.top; y < compareBounds.top + compareBounds.height; ++y)
     {
@@ -76,11 +76,11 @@ bool ComparePixels(const sf::Image& image1,
 
 //------------------------------------------------------------------------------
 bool BitmaskCompare(const sf::Texture& texture1,
-    const sf::IntRect& textureRect1,
-    const sf::Transformable& transformable1,
-    const sf::Texture& texture2,
-    const sf::IntRect& textureRect2,
-    const sf::Transformable& transformable2)
+                    const sf::IntRect& textureRect1,
+                    const sf::Transformable& transformable1,
+                    const sf::Texture& texture2,
+                    const sf::IntRect& textureRect2,
+                    const sf::Transformable& transformable2)
 {
 
     sf::Image image1 = CreateImageFromTexture(texture1, textureRect1);
@@ -96,24 +96,10 @@ bool BitmaskCompare(const sf::Texture& texture1,
     }
 
     return ComparePixels(image1,
-        image2,
-        compareBounds.value(),
-        transformable1.getInverseTransform(),
-        transformable2.getInverseTransform());
-}
-
-//------------------------------------------------------------------------------
-bool BitmaskCompare(const sf::Sprite& sprite1,
-    const sf::Transformable& transformable1,
-    const sf::Sprite& sprite2,
-    const sf::Transformable& transformable2)
-{
-    return BitmaskCompare(sprite1.getTexture(),
-        sprite1.getTextureRect(),
-        transformable1,
-        sprite2.getTexture(),
-        sprite2.getTextureRect(),
-        transformable2);
+                         image2,
+                         compareBounds.value(),
+                         transformable1.getInverseTransform(),
+                         transformable2.getInverseTransform());
 }
 
 //------------------------------------------------------------------------------
