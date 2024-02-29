@@ -1,0 +1,14 @@
+{ "columns":12,
+ "image":"..\/..\/graphics\/tilesets\/outside.png",
+ "imageheight":256,
+ "imagewidth":768,
+ "margin":0,
+ "name":"outside",
+ "spacing":0,
+ "tilecount":48,
+ "tiledversion":"1.10.2",
+ "tileheight":64,
+ "tilewidth":64,
+ "type":"tileset",
+ "version":"1.10"
+}

@@ -1,0 +1,14 @@
+{ "columns":11,
+ "image":"..\/..\/graphics\/tilesets\/extra.png",
+ "imageheight":384,
+ "imagewidth":704,
+ "margin":0,
+ "name":"extra",
+ "spacing":0,
+ "tilecount":66,
+ "tiledversion":"1.10.2",
+ "tileheight":64,
+ "tilewidth":64,
+ "type":"tileset",
+ "version":"1.10"
+}

@@ -1,0 +1,14 @@
+{ "columns":12,
+ "image":"..\/..\/graphics\/tilesets\/inside.png",
+ "imageheight":512,
+ "imagewidth":768,
+ "margin":0,
+ "name":"inside",
+ "spacing":0,
+ "tilecount":96,
+ "tiledversion":"1.10.2",
+ "tileheight":64,
+ "tilewidth":64,
+ "type":"tileset",
+ "version":"1.10"
+}
