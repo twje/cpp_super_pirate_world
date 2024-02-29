@@ -26,9 +26,9 @@ public:
     T* GetResource(std::string filepath)
     {
         auto resource = Find(filepath);
-        if (resource)
-        {
-            return resource->first->get();
+        if (resource && resource->first)
+        {            
+            return resource->first.get();
         }
         return nullptr;
     }
