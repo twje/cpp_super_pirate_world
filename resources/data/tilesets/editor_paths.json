@@ -1,0 +1,14 @@
+{ "columns":2,
+ "image":"..\/..\/graphics\/tilesets\/editor_paths.png",
+ "imageheight":192,
+ "imagewidth":128,
+ "margin":0,
+ "name":"editor_paths",
+ "spacing":0,
+ "tilecount":6,
+ "tiledversion":"1.10.2",
+ "tileheight":64,
+ "tilewidth":64,
+ "type":"tileset",
+ "version":"1.10"
+}
