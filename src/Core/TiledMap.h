@@ -8,9 +8,12 @@
 
 // Core
 #include "Core/ResourceManager.h"
+#include "Core/CustomExceptions.h"
 
 // System 
 #include <filesystem>
+
+
 
 namespace fs = std::filesystem;
 
@@ -59,6 +62,7 @@ public:
     TiledMapObject(tson::Object& object, tson::Layer& layer)
         : mType(TiledMapObjectType::Unknown)
         , mGid(0)        
+        , mScale(1.0f, 1.0f)
     {
         mPosition = ConvertToSFMLVector2f(object.getPosition());
         mPosition.x = std::round(mPosition.x);
@@ -72,12 +76,24 @@ public:
             
             mPosition.y -= object.getSize().y;  // Account for y origin of tile object
         }
+        
+        // Do not support composite flips
+        if (object.hasFlipFlags(tson::TileFlipFlags::Vertically))
+        {
+            mScale.y = -1.0f;
+            mPosition.y += object.getSize().y;
+        }
+        else if (object.hasFlipFlags(tson::TileFlipFlags::Horizontally))
+        {
+            throw NotImplementedException();
+        }
     }
 
     TiledMapObjectType GetType() const { return mType; }
     uint32_t GetGid() const { return mGid; }
     const sf::IntRect& GetTextureRegion() const { return mTextureRegion; }
-    const sf::Vector2f& GetPosition() const { return mPosition; }
+    const sf::Vector2f& GetPosition() const { return mPosition; }    
+    const sf::Vector2f& GetScale() const { return mScale; }
 
 private:
     void ComputeTextureRegion(tson::Layer& layer)
@@ -92,6 +108,7 @@ private:
     uint32_t mGid;
     sf::IntRect mTextureRegion;
     sf::Vector2f mPosition;
+    sf::Vector2f mScale;
 };
 
 //------------------------------------------------------------------------------
@@ -102,6 +119,7 @@ public:
         : mId(tile.getId() - 1)
         , mGid(tile.getGid())
         , mTextureRegion(ConvertToSFMLRect<float>(tile.getDrawingRect()))
+        , mScale(1.0f, 1.0f)
     { 
         if (tileset.getType() == tson::TilesetType::ImageCollectionTileset)
         {
@@ -109,18 +127,30 @@ public:
             assert(fs::exists(textureFullpath));
             mTextureRelativeFilepath = fs::relative(textureFullpath, RESOURCES_PATH);
         }
-    }     
+
+        // Do not support composite flips
+        if (tile.hasFlipFlags(tson::TileFlipFlags::Vertically))
+        {
+            throw NotImplementedException();
+        }
+        else if (tile.hasFlipFlags(tson::TileFlipFlags::Horizontally))
+        {
+            throw NotImplementedException();
+        }
+    }
 
     uint32_t GetId() const { return mId; }
     uint32_t GetGid() const { return mGid; }
     const sf::IntRect& GetTextureRegion() const { return mTextureRegion; }    
-    fs::path GetTextureRelativeFilepath() const { return mTextureRelativeFilepath; }
+    fs::path GetTextureRelativeFilepath() const { return mTextureRelativeFilepath; }    
+    const sf::Vector2f& GetScale() const { return mScale; }
 
 private:
     uint32_t mId;
     uint32_t mGid;
     sf::IntRect mTextureRegion;    
     fs::path mTextureRelativeFilepath;
+    sf::Vector2f mScale;
 };
 
 //------------------------------------------------------------------------------
@@ -218,22 +248,10 @@ public:
         , mType(TiledMapLayerType::Unknown)
     {
         if (layer.getType() == tson::LayerType::TileLayer)
-        {
-            uint32_t x = 0;
-            uint32_t y = 0;
-            for (uint32_t tileId : layer.getData())
+        {      
+            for (auto& [index, tile] : layer.getTileData())
             {
-                if (x == static_cast<uint32_t>(layer.getSize().x))
-                {
-                    ++y;
-                    x = 0;
-                }
-            
-                if (tileId > 0 && tileMap.count(tileId) > 0)
-                {
-                    mTileData[{x, y}] = tileMap.at(tileId);
-                }
-                x++;
+                mTileData[index] = tileMap.at(tile->getGid());
             }
         }
         else if (layer.getType() == tson::LayerType::ObjectGroup)
@@ -268,6 +286,7 @@ public:
     TiledMapLayerType GetType() const { return mType; }
 
 private:
+    std::set<uint32_t> mUniqueFlaggedTiles;
     std::vector<TiledMapObject> mObjects;
     std::map<std::tuple<int32_t, int32_t>, TiledMapTile*> mTileData;
     sf::Vector2u mTileCount;
@@ -360,7 +379,7 @@ public:
         for (const TiledMapLayer& layer : mTiledMap.GetLayers())
         {
             if (layer.GetType() == TiledMapLayerType::TileLayer)
-            {
+            {                
                 for (uint32_t y = 0; y < layer.GetTileCount().y; y++)
                 {
                     for (uint32_t x = 0; x < layer.GetTileCount().x; x++)
@@ -373,7 +392,8 @@ public:
                             sf::Sprite sprite(*texture);
                             sprite.setTextureRect(tile->GetTextureRegion());
                             sprite.setPosition({ x * tileSize.x, y * tileSize.y });
-                        
+                            sprite.setScale(tile->GetScale());
+
                             window.draw(sprite);
                         }
                     }
@@ -389,6 +409,7 @@ public:
                         sf::Sprite sprite(*texture);
                         sprite.setTextureRect(object.GetTextureRegion());
                         sprite.setPosition(object.GetPosition());
+                        sprite.setScale(object.GetScale());
 
                         window.draw(sprite);
                     }
