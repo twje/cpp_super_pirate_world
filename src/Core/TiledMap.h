@@ -363,6 +363,7 @@ class TiledMapRenderer
 public:
     TiledMapRenderer(TiledMap& tiledMap)
         : mTiledMap(tiledMap)
+        , mDrawObjectLayers(true)
     { 
         mTiledMap.LoadTextures();
     }
@@ -401,6 +402,8 @@ public:
             }
             else if (layer.GetType() == TiledMapLayerType::ObjectGroup)
             {
+                if (!mDrawObjectLayers) { return; }
+
                 for (const TiledMapObject& object : layer.GetObjects())
                 {
                     if (object.GetType() == TiledMapObjectType::Object)
@@ -418,6 +421,10 @@ public:
         }
     }
 
+    void SetDrawObjectLayers(bool flag) { mDrawObjectLayers = flag; }
+    void ToggleDrawObjectLayers() { mDrawObjectLayers = !mDrawObjectLayers; }
+
 private:
     TiledMap& mTiledMap;
+    bool mDrawObjectLayers;
 };

@@ -36,12 +36,12 @@ public:
         mLevelMaps.emplace(5, "data/levels/5.json");
 
         mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, *this);
-    }
+    }    
 
-    virtual void SwitchLevel() override
-    {
-
-    }
+    virtual bool HandleEvent(const sf::Event& event) 
+    { 
+        return mCurrentLevel->HandleEvent(event);
+    };
 
     virtual void Resize(const sf::Vector2f& size) override
     {
@@ -50,49 +50,38 @@ public:
 
     virtual bool Update(const sf::Time& timeslice) override
     {
-        sf::Vector2f direction;
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
-        {
-            direction.x = 1.0f;
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
-        {
-            direction.x = -1.0f;
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
-        {
-            direction.y = -1.0f;
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
-        {
-            direction.y = 1.0f;
-        }
-
-        mPosition += direction * timeslice.asSeconds() * 1000.0f;
-        mGameView.setCenter(mPosition);
+        bool drawNextLayer = mCurrentLevel->Update(timeslice);
 
         for (GameObject* obj : mAllSprites)
         {
             obj->Update(timeslice);
         }
-        return true;
+
+        mGameView.setCenter(mCurrentLevel->GetCameraPosition());
+
+        return drawNextLayer;
     }
 
     virtual bool Draw(sf::RenderWindow& window) override
     {
         window.setView(mGameView);        
 
-        mCurrentLevel->Draw(window);
+        bool updateNextLayer = mCurrentLevel->Draw(window);
 
         for (GameObject* obj : mAllSprites)
         {
             window.draw(*obj);
         }
-        return true;
+
+        return updateNextLayer;
     }
 
 private:
+    virtual void SwitchLevel() override
+    {
+        // implement
+    }
+
     Group mAllSprites;
     sf::View mGameView;
     
@@ -123,6 +112,10 @@ int main()
             if (event.type == sf::Event::Closed)
             {
                 window.close();
+            }
+            else
+            {
+                layerStack.HandleEvent(event);
             }
         }
 

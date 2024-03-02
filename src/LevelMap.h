@@ -15,6 +15,9 @@ public:
         mTiledMapRenderer = std::make_unique<TiledMapRenderer>(*mTiledMap);
     }
 
+    void SetDrawObjectLayers(bool flag) { mTiledMapRenderer->SetDrawObjectLayers(flag); }
+    void ToggleDrawObjectLayers() { mTiledMapRenderer->ToggleDrawObjectLayers(); }
+
     void Draw(sf::RenderWindow& window)
     {
         mTiledMapRenderer->Draw(window);
