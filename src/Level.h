@@ -13,10 +13,12 @@
 class Level
 {
 public:
-    Level(LevelMap& levelMap, GameData& gameData, IGame& gameCallbacks)
+    Level(LevelMap& levelMap, GameData& gameData, IGame& gameCallbacks, sf::View& gameView, sf::View& hudView)
         : mLevelMap(levelMap)
         , mGameData(gameData)    
         , mGameCallbacks(gameCallbacks)
+        , mGameView(gameView)
+        , mHudView(hudView)
     { 
         mLevelMap.SetDrawObjectLayers(false);
 
@@ -56,29 +58,43 @@ public:
         }
 
         mCameraPosition += direction * timeslice.asSeconds() * 1000.0f;
+        mGameView.setCenter(mCameraPosition);
 
         return true;
     }
 
     bool Draw(sf::RenderWindow& window)
     {
-        mLevelMap.Draw(window);
-
-        std::string foo = "A";
-        if (mLevelMap.GetDrawObjectLayers())
-        {
-            foo = "B";
-        }
-        DrawText(window, FontId::DEBUG_FONT, foo, sf::Vector2f());
-
+        DrawGame(window);
+        DrawHUD(window);
         return true;
-    }
-
-    const sf::Vector2f& GetCameraPosition() { return mCameraPosition; }
+    }    
 
 private:
+    void DrawGame(sf::RenderWindow& window)
+    {
+        window.setView(mGameView);
+
+        mLevelMap.Draw(window);
+    }
+
+    void DrawHUD(sf::RenderWindow& window)
+    {
+        window.setView(mHudView);
+
+        std::string objectRenderStatus = "Objects Rendered by Level";
+        if (mLevelMap.GetDrawObjectLayers())
+        {
+            objectRenderStatus = "Objects Rendered by TiledMap";
+        }
+
+        DrawText(window, FontId::DEBUG_FONT, objectRenderStatus, sf::Vector2f(10.0f, 10.f));
+    }
+
     LevelMap& mLevelMap;
     GameData& mGameData;
     IGame& mGameCallbacks;
+    sf::View& mGameView;
+    sf::View& mHudView;
     sf::Vector2f mCameraPosition;
 };

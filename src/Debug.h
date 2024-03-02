@@ -16,7 +16,7 @@ void DrawText(sf::RenderTarget& target, FontId fontId, const sf::String& value, 
 {
     ResourceLocator& locator = ResourceLocator::GetInstance();
     sf::Font* font = locator.GetFontManager().GetResource(FONT_MAP.at(FontId::DEBUG_FONT));
-    sf::Text text(*font, value, 30);
+    sf::Text text(*font, value, 15);
     text.setPosition(position);
     target.draw(text);
 }

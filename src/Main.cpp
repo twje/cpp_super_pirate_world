@@ -28,7 +28,8 @@ public:
         , mPosition(sf::Vector2f(windowSize) / 2.0f)
     {        
         mGameView.setSize(sf::Vector2f(windowSize));
-        mGameView.setCenter(sf::Vector2f(windowSize) / 2.0f);        
+        mGameView.setCenter(sf::Vector2f(windowSize) / 2.0f);
+        mHudView = mGameView;
 
         mLevelMaps.emplace(0, "data/levels/omni.json");
         mLevelMaps.emplace(1, "data/levels/1.json");
@@ -37,7 +38,7 @@ public:
         mLevelMaps.emplace(4, "data/levels/4.json");
         mLevelMaps.emplace(5, "data/levels/5.json");
 
-        mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, *this);
+        mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, *this, mGameView, mHudView);
         LoadGlobalAssets();
     }    
 
@@ -49,34 +50,17 @@ public:
     virtual void Resize(const sf::Vector2f& size) override
     {
         mGameView.setSize(size);
+        mHudView.setSize(size);
     }
 
     virtual bool Update(const sf::Time& timeslice) override
     {
-        bool drawNextLayer = mCurrentLevel->Update(timeslice);
-
-        for (GameObject* obj : mAllSprites)
-        {
-            obj->Update(timeslice);
-        }
-
-        mGameView.setCenter(mCurrentLevel->GetCameraPosition());
-
-        return drawNextLayer;
+        return mCurrentLevel->Update(timeslice);        
     }
 
     virtual bool Draw(sf::RenderWindow& window) override
     {
-        window.setView(mGameView);        
-
-        bool updateNextLayer = mCurrentLevel->Draw(window);
-
-        for (GameObject* obj : mAllSprites)
-        {
-            window.draw(*obj);
-        }
-
-        return updateNextLayer;
+        return mCurrentLevel->Draw(window);
     }
 
     void UnloadGlobalAssets()
@@ -107,7 +91,7 @@ private:
 
     Group mAllSprites;
     sf::View mGameView;
-    
+    sf::View mHudView;
     std::unordered_map<uint32_t, LevelMap> mLevelMaps;
     sf::Vector2f mPosition;
     GameData mGameData;
