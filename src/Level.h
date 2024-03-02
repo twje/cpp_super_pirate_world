@@ -9,6 +9,9 @@
 #include "Player.h"
 #include "Debug.h"
 
+// Core
+#include "Core/GameObjectManager.h"
+
 //------------------------------------------------------------------------------
 class Level
 {
@@ -19,6 +22,7 @@ public:
         , mGameCallbacks(gameCallbacks)
         , mGameView(gameView)
         , mHudView(hudView)
+        , mPlayer(nullptr)
     { 
         mLevelMap.SetDrawObjectLayers(false);
 
@@ -27,12 +31,10 @@ public:
         {            
             if (object.GetName() == "player")
             {
-                std::cout << "Found player" << std::endl;
+                mPlayer = GameObjectManager::Instance().CreateGameObject<Player>(sf::Vector2f());
+                mAllSprites.AddGameObject(mPlayer);
             }
-        }
-
-        // Temporary until player is loaded
-        mCameraPosition = sf::Vector2f();
+        }        
     }
 
     bool HandleEvent(const sf::Event& event)
@@ -47,27 +49,12 @@ public:
 
     bool Update(const sf::Time& timeslice)
     {
-        sf::Vector2f direction;
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+        for (GameObject* object : mAllSprites)
         {
-            direction.x = 1.0f;
+            object->Update(timeslice);
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
-        {
-            direction.x = -1.0f;
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
-        {
-            direction.y = -1.0f;
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
-        {
-            direction.y = 1.0f;
-        }
-
-        mCameraPosition += direction * timeslice.asSeconds() * 1000.0f;
-        mGameView.setCenter(mCameraPosition);
+                
+        mGameView.setCenter(mPlayer->GetCameraCenter());
 
         return true;
     }
@@ -83,8 +70,13 @@ private:
     void DrawGame(sf::RenderWindow& window)
     {
         window.setView(mGameView);
-
+        
         mLevelMap.Draw(window);
+
+        for (GameObject* object : mAllSprites)
+        {
+            window.draw(*object);
+        }
     }
 
     void DrawHUD(sf::RenderWindow& window)
@@ -99,13 +91,12 @@ private:
 
         DrawText(window, FontId::DEBUG_FONT, objectRenderStatus, sf::Vector2f(10.0f, 10.f));
     }
-
+    
     LevelMap& mLevelMap;
     GameData& mGameData;
     IGame& mGameCallbacks;
     sf::View& mGameView;
     sf::View& mHudView;
-
-
-    sf::Vector2f mCameraPosition;
+    Player* mPlayer;
+    Group mAllSprites;    
 };

@@ -11,12 +11,15 @@
 // Core
 #include "Core/GameObject.h"
 
+// System
+#include <iostream>
+
 //------------------------------------------------------------------------------
 class Player : public GameObject
 {
 public:
     Player(const sf::Vector2f& position)
-        : mSpeed(200.0f)
+        : mSpeed(1000.0f)
     {
         SetPosition(position);
         mPlaceholderSprite.setSize({ 48.0f, 56.0f });
@@ -42,8 +45,21 @@ public:
         {
             mDirection.x = 0.0f;
         }
+                
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
+        {
+            mDirection.y = -1.0f;
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
+        {
+            mDirection.y = 1.0f;
+        }
+        else
+        {
+            mDirection.y = 0.0f;
+        }
 
-        sf::Vector2f delta = mDirection * mSpeed * timeslice.asSeconds();
+        sf::Vector2f delta = mDirection * mSpeed * timeslice.asSeconds();        
         Move(delta);
     };
 
@@ -53,6 +69,8 @@ public:
         statesCopy.transform *= GetTransform();
         target.draw(mPlaceholderSprite, statesCopy);
     }
+
+    sf::Vector2f GetCameraCenter() { return GetGlobalBounds().GetCenter(); }
 
 private:
     sf::RectangleShape mPlaceholderSprite;
