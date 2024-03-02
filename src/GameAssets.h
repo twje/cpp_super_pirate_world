@@ -23,14 +23,20 @@ public:
             locator.GetFontManager().RequireResource(filepath);
         }
 
+        // Individual textures
+        for (auto& [_, filepath] : GetTextureLookup())
+        {
+            locator.GetTextureManager().RequireResource(filepath);
+        }
+
         // Textures organised by sub-directories        
-        for (auto& [id, filepath] : GetTextureDirMapsLookup())
+        for (auto& [_, filepath] : GetTextureDirMapsLookup())
         {
             locator.GetTextureDirMapManager().RequireResource(filepath);
         }
 
         // Textures in directory
-        for (auto& [id, filepath] : GetTextureVecLookup())
+        for (auto& [_, filepath] : GetTextureVecLookup())
         {
             locator.GetTextureVectorManager().RequireResource(filepath);
         }
@@ -45,6 +51,12 @@ public:
             locator.GetFontManager().ReleaseResource(filepath);
         }
 
+        // Individual textures
+        for (auto& [_, filepath] : GetTextureLookup())
+        {
+            locator.GetTextureManager().ReleaseResource(filepath);
+        }
+
         // Textures organised by sub-directories
         for (auto& [_, filepath] : GetTextureDirMapsLookup())
         {
@@ -56,6 +68,15 @@ public:
         {
             locator.GetTextureVectorManager().ReleaseResource(filepath);
         }
+    }
+
+    sf::Texture& GetTexture(const std::string& id) const
+    {
+        ResourceLocator& locator = ResourceLocator::GetInstance();
+        AssetLookup& lookup = GetTextureLookup();
+        assert(lookup.count(id) > 0);
+        
+        return *locator.GetTextureManager().GetResource(lookup.at(id));
     }
 
     TextureMap& GetTextureDirMap(const std::string& id) const 
@@ -77,6 +98,20 @@ public:
     }
 
 private:
+    static AssetLookup& GetTextureLookup()
+    {
+        static AssetLookup lookup = {
+            {"saw_chain", "graphics/enemies/saw/saw_chain.png"},
+            {"spike", "graphics/enemies/spike_ball/Spiked Ball.png"},
+            {"spike_chain", "graphics/enemies/spike_ball/spiked_chain.png"},
+            {"pearl", "graphics/enemies/bullets/pearl.png"},
+            {"water_body", "graphics/level/water/body.png"},
+            {"cloud_large", "graphics/level/clouds/large_cloud.png"},
+        };
+
+        return lookup;
+    }
+
     static AssetLookup& GetTextureDirMapsLookup()
     {
         static AssetLookup lookup = { 

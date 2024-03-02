@@ -43,6 +43,15 @@ private:
 };
 
 //------------------------------------------------------------------------------
+class Item : public Sprite
+{
+public:
+    Item(const sf::Texture& texture, const sf::Vector2f& position)
+        : Sprite(texture, position)
+    { }
+};
+
+//------------------------------------------------------------------------------
 class AnimatedSprite : public GameObject
 {
 public:
@@ -214,28 +223,73 @@ private:
     {
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Items"))
         {            
-            // import_sub_folders
+            GameObject* sprite = AddItemObject(object);
+            mAllSprites.AddGameObject(sprite);
         }
     }
 
     void SetupWater()
     {
+        for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Water"))
+        {
+            sf::Vector2f tilesize = mLevelMap.GetTileSize();
+            uint32_t rows = static_cast<uint32_t>(std::round(object.GetSize().y / tilesize.y));
+            uint32_t cols = static_cast<uint32_t>(std::round(object.GetSize().x / tilesize.x));
 
+            for (uint32_t row = 0; row < rows; row++)
+            {
+                for (uint32_t col = 0; col < cols; col++)
+                {
+                    float x = static_cast<float>(object.GetPosition().x + col * tilesize.x);
+                    float y = static_cast<float>(object.GetPosition().y + row * tilesize.y);
+                    
+                    if (row == 0)
+                    {
+                        GameObject* sprite = AddAnimationObject({ x, y },
+                                                                object, 
+                                                                mGameAssets.GetTextureVec("water_top"),
+                                                                ANIMATION_SPEED);
+                        mAllSprites.AddGameObject(sprite);
+                    }
+                    else
+                    {
+                        GameObject* sprite = AddSpriteObject({ x, y }, &mGameAssets.GetTexture("water_body"));
+                        mAllSprites.AddGameObject(sprite);
+                    }
+                }
+            }
+        }
     }
 
     GameObject* AddSpriteObject(const TiledMapObject& object)
     {
         const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
-        return mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
+        return AddSpriteObject(object.GetPosition(), texture);
+    }
+
+    GameObject* AddSpriteObject(const sf::Vector2f& position, const sf::Texture* texture)
+    {
+        return mGameObjectManager.CreateGameObject<Sprite>(*texture, position);
+    }
+
+    GameObject* AddItemObject(const TiledMapObject& object)
+    {
+        const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
+        return mGameObjectManager.CreateGameObject<Item>(*texture, object.GetPosition());
     }
 
     GameObject* AddAnimationObject(const TiledMapObject& object, TextureVector& animFrames, uint32_t animSpeed)
     {
-        return mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+        return AddAnimationObject(object.GetPosition(), object, animFrames, animSpeed);
+    }
+
+    GameObject* AddAnimationObject(const sf::Vector2f& position, const TiledMapObject& object, TextureVector& animFrames, uint32_t animSpeed)
+    {
+        return mGameObjectManager.CreateGameObject<AnimatedSprite>(position,
                                                                    object.GetScale(),
                                                                    animFrames,
                                                                    animSpeed);
-    }    
+    }
 
     void DrawGame(sf::RenderWindow& window)
     {

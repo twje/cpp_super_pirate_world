@@ -63,6 +63,7 @@ public:
         : mType(TiledMapObjectType::Unknown)
         , mGid(0)        
         , mScale(1.0f, 1.0f)
+        , mSize(ConvertToSFMLVector2f(object.getSize()))
         , mName(object.getName())
     {
         mPosition = ConvertToSFMLVector2f(object.getPosition());
@@ -95,6 +96,7 @@ public:
     const sf::IntRect& GetTextureRegion() const { return mTextureRegion; }
     const sf::Vector2f& GetPosition() const { return mPosition; }    
     const sf::Vector2f& GetScale() const { return mScale; }
+    const sf::Vector2f& GetSize() const { return mSize; }
     const std::string& GetName() const { return mName; }
 
 private:
@@ -111,6 +113,7 @@ private:
     sf::IntRect mTextureRegion;
     sf::Vector2f mPosition;
     sf::Vector2f mScale;
+    sf::Vector2f mSize;
     std::string mName;
 };
 
