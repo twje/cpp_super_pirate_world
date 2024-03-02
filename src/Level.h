@@ -100,46 +100,7 @@ public:
         , mPlayer(nullptr)
     { 
         mLevelMap.SetDrawObjectLayers(false);
-        
-        // Objects
-        for(const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Objects"))
-        {            
-            if (object.GetName() == "player")
-            {
-                mPlayer = mGameObjectManager.CreateGameObject<Player>(sf::Vector2f());
-                mAllSprites.AddGameObject(mPlayer);
-            }
-            // Static
-            else if (object.GetName() == "barrel" || object.GetName() == "crate")
-            {
-                const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());                
-                Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
-                mAllSprites.AddGameObject(sprite);
-            }
-            // Animations
-            else
-            {
-                if (IsSubString(object.GetName(), "palm"))
-                {
-                    TextureVector& animFrames = mGameAssets.GetTextureDirMap("palms").at(object.GetName());
-                    uint32_t animSpeed = ANIMATION_SPEED + RandomInteger(-1, 1);
-                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
-                                                                                                 object.GetScale(),
-                                                                                                 animFrames,
-                                                                                                 animSpeed);
-                    mAllSprites.AddGameObject(sprite);
-                }
-                else
-                {
-                    TextureVector& animFrames = mGameAssets.GetTextureVecMap(object.GetName());
-                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
-                                                                                                 object.GetScale(),
-                                                                                                 animFrames,
-                                                                                                 ANIMATION_SPEED);
-                    mAllSprites.AddGameObject(sprite);
-                }
-            }
-        }
+        Setup();
     }
 
     bool HandleEvent(const sf::Event& event)
@@ -172,6 +133,90 @@ public:
     }    
 
 private:
+    void Setup()
+    {
+        SetupBackgroundDetails();
+        SetupObjects();
+        SetupMovingObjects();
+    }
+
+    void SetupBackgroundDetails()
+    {
+        for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("BG details"))
+        {
+            // Static
+            if (object.GetName() == "static")
+            {
+                const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
+                Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
+                mAllSprites.AddGameObject(sprite);
+            }
+            // Animated
+            else
+            {
+                std::string id = object.GetName();
+                if (object.GetName() == "candle")
+                {
+                    id = "candle_light";
+                }
+
+                TextureVector& animFrames = mGameAssets.GetTextureVecMap(id);
+                AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+                                                                                             object.GetScale(),
+                                                                                             animFrames,
+                                                                                             ANIMATION_SPEED);
+                mAllSprites.AddGameObject(sprite);
+            }
+        }
+    }
+
+    void SetupObjects()
+    {
+        for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Objects"))
+        {
+            if (object.GetName() == "player")
+            {
+                mPlayer = mGameObjectManager.CreateGameObject<Player>(sf::Vector2f());
+                mAllSprites.AddGameObject(mPlayer);
+            }
+            // Static
+            else if (object.GetName() == "barrel" || object.GetName() == "crate")
+            {
+                const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
+                Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
+                mAllSprites.AddGameObject(sprite);
+            }
+            // Animated
+            else
+            {
+                if (IsSubString(object.GetName(), "palm"))
+                {
+                    TextureVector& animFrames = mGameAssets.GetTextureDirMap("palms").at(object.GetName());
+                    uint32_t animSpeed = ANIMATION_SPEED + RandomInteger(-1, 1);
+                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+                        object.GetScale(),
+                        animFrames,
+                        animSpeed);
+                    mAllSprites.AddGameObject(sprite);
+                }
+                else
+                {
+                    TextureVector& animFrames = mGameAssets.GetTextureVecMap(object.GetName());
+                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+                        object.GetScale(),
+                        animFrames,
+                        ANIMATION_SPEED);
+                    mAllSprites.AddGameObject(sprite);
+                }
+            }
+        }
+    }
+
+    void SetupMovingObjects()
+    {
+
+    }
+
     void DrawGame(sf::RenderWindow& window)
     {
         window.setView(mGameView);
@@ -195,8 +240,8 @@ private:
         }
 
         DrawText(window, FontId::DEBUG_FONT, objectRenderStatus, sf::Vector2f(10.0f, 10.f));
-    }
-    
+    }   
+
     LevelMap& mLevelMap;
     GameData& mGameData;
     GameAssets& mGameAssets;

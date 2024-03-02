@@ -99,23 +99,9 @@ int main()
     LayerStack layerStack;
     layerStack.PushLayer(std::make_unique<Game>(layerStack, window.getSize()));    
     Game* game = static_cast<Game*>(layerStack.GetTopLayer());
-
+    
     while (window.isOpen())
     {
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-            {
-                game->UnloadGlobalAssets();
-                window.close();
-            }
-            else
-            {
-                layerStack.HandleEvent(event);
-            }
-        }
-
         timeSinceLastUpdate += clock.restart();
         while (timeSinceLastUpdate >= timePerFrame)
         {
@@ -126,6 +112,20 @@ int main()
             window.clear();
             layerStack.Draw(window);
             window.display();
+        }
+
+        sf::Event event;
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+            {
+                game->UnloadGlobalAssets();
+                window.close();                
+            }
+            else
+            {
+                layerStack.HandleEvent(event);
+            }
         }
     }
 

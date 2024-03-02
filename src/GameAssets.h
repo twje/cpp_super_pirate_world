@@ -80,7 +80,10 @@ private:
     static AssetLookup& GetTextureDirMapsLookup()
     {
         static AssetLookup lookup = { 
-            {"palms", "graphics/level/palms"} 
+            {"palms", "graphics/level/palms"},
+            {"player", "graphics/player"},
+            {"shell", "graphics/enemies/shell"},
+            {"items", "graphics/items"}
         };
         
         return lookup;

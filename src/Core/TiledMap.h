@@ -422,7 +422,7 @@ public:
             }
             else if (layer.GetType() == TiledMapLayerType::ObjectGroup)
             {
-                if (!mDrawObjectLayers) { return; }
+                if (!mDrawObjectLayers) { continue; }
 
                 for (const TiledMapObject& object : layer.GetObjects())
                 {
