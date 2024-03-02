@@ -5,6 +5,7 @@
 // Game
 #include "Settings.h"
 #include "GameData.h"
+#include "Interfaces.h"
 #include "LevelMap.h"
 #include "Level.h"
 #include "Player.h"
@@ -17,7 +18,7 @@
 #include "Core/LayerStack.h"
 
 //------------------------------------------------------------------------------
-class Game : public Layer
+class Game : public Layer, public IGame
 {
 public:
     Game(LayerStack& layerStack, const sf::Vector2u& windowSize)
@@ -34,7 +35,12 @@ public:
         mLevelMaps.emplace(4, "data/levels/4.json");
         mLevelMaps.emplace(5, "data/levels/5.json");
 
-        mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData);
+        mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, *this);
+    }
+
+    virtual void SwitchLevel() override
+    {
+
     }
 
     virtual void Resize(const sf::Vector2f& size) override
