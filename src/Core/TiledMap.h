@@ -63,6 +63,7 @@ public:
         : mType(TiledMapObjectType::Unknown)
         , mGid(0)        
         , mScale(1.0f, 1.0f)
+        , mName(object.getName())
     {
         mPosition = ConvertToSFMLVector2f(object.getPosition());
         mPosition.x = std::round(mPosition.x);
@@ -94,6 +95,7 @@ public:
     const sf::IntRect& GetTextureRegion() const { return mTextureRegion; }
     const sf::Vector2f& GetPosition() const { return mPosition; }    
     const sf::Vector2f& GetScale() const { return mScale; }
+    const std::string& GetName() const { return mName; }
 
 private:
     void ComputeTextureRegion(tson::Layer& layer)
@@ -109,6 +111,7 @@ private:
     sf::IntRect mTextureRegion;
     sf::Vector2f mPosition;
     sf::Vector2f mScale;
+    std::string mName;
 };
 
 //------------------------------------------------------------------------------
@@ -246,6 +249,7 @@ public:
     TiledMapLayer(tson::Layer& layer, std::unordered_map<uint32_t, TiledMapTile*> tileMap)
         : mTileCount(ConvertToSFMLVector2f(layer.getSize()))
         , mType(TiledMapLayerType::Unknown)
+        , mName(layer.getName())
     {
         if (layer.getType() == tson::LayerType::TileLayer)
         {      
@@ -284,6 +288,7 @@ public:
     const std::vector<TiledMapObject>& GetObjects() const { return mObjects; }
     const sf::Vector2u& GetTileCount() const { return mTileCount; }
     TiledMapLayerType GetType() const { return mType; }
+    const std::string& GetName() const { return mName; }
 
 private:
     std::set<uint32_t> mUniqueFlaggedTiles;
@@ -291,6 +296,7 @@ private:
     std::map<std::tuple<int32_t, int32_t>, TiledMapTile*> mTileData;
     sf::Vector2u mTileCount;
     TiledMapLayerType mType;
+    std::string mName;
 };
 
 //------------------------------------------------------------------------------
@@ -348,6 +354,20 @@ public:
 
     const std::vector<TiledMapLayer>& GetLayers() { return mLayers; }
     const sf::Vector2f GetTileSize() const { return mTileSize; }
+    
+    const std::vector<TiledMapObject>& GetObjectsByLayerName(std::string layerName) const
+    {
+        for (const TiledMapLayer& layer : mLayers)
+        {
+            if (layer.GetName() == layerName)
+            {
+                return layer.GetObjects();
+            }
+        }
+
+        static const std::vector<TiledMapObject> emptyVector { };
+        return emptyVector;
+    }
 
 private:
     std::unordered_map<uint32_t, sf::Texture*> mTextureLookup;

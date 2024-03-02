@@ -22,6 +22,15 @@ public:
     { 
         mLevelMap.SetDrawObjectLayers(false);
 
+        // Objects
+        for(const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Objects"))
+        {            
+            if (object.GetName() == "player")
+            {
+                std::cout << "Found player" << std::endl;
+            }
+        }
+
         // Temporary until player is loaded
         mCameraPosition = sf::Vector2f();
     }
@@ -96,5 +105,7 @@ private:
     IGame& mGameCallbacks;
     sf::View& mGameView;
     sf::View& mHudView;
+
+
     sf::Vector2f mCameraPosition;
 };
