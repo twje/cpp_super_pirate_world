@@ -26,3 +26,9 @@ std::string SplitAndGetElement(const std::string& input, char delimiter, int ind
         throw std::out_of_range("Index is out of bounds.");
     }
 }
+
+//------------------------------------------------------------------------------
+bool IsSubString(const std::string& string, const std::string& substring)
+{
+    return string.find(substring) != std::string::npos;
+}

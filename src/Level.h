@@ -12,6 +12,9 @@
 
 // Core
 #include "Core/GameObjectManager.h"
+#include "Core/StringUtils.h"
+#include "Core/RandomUtils.h"
+#include "Core/Animate.h"
 
 //------------------------------------------------------------------------------
 class Sprite : public GameObject
@@ -40,6 +43,48 @@ private:
 };
 
 //------------------------------------------------------------------------------
+class AnimatedSprite : public GameObject
+{
+public:
+    AnimatedSprite(const sf::Vector2f& position, TextureVector& animFrames, uint32_t animSpeed)
+        : mAnimation(animSpeed)
+        , mSprite(*animFrames[0])
+    {     
+        SetPosition(position);
+
+        auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
+        for (auto& texturePtr : animFrames)
+        {
+            animFramesCopy->push_back(&(*texturePtr));
+        }               
+        mAnimation.AddSequence({ "current", std::move(animFramesCopy) });
+        mAnimation.SetSequence("current");
+    }
+
+    virtual FloatRect GetGlobalBounds() const
+    {        
+        return GetTransform().transformRect(mSprite.getLocalBounds());
+    }
+
+    virtual void Update(const sf::Time& timeslice)
+    {
+        mAnimation.Update(timeslice);
+        mSprite.setTexture(mAnimation.GetTexture(), true);
+    }
+
+    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
+    {
+        sf::RenderStates statesCopy(states);
+        statesCopy.transform *= GetTransform();
+        target.draw(mSprite, statesCopy);
+    }
+
+private:
+    Animation mAnimation;    
+    sf::Sprite mSprite;
+};
+
+//------------------------------------------------------------------------------
 class Level
 {
 public:
@@ -63,15 +108,25 @@ public:
                 mPlayer = mGameObjectManager.CreateGameObject<Player>(sf::Vector2f());
                 mAllSprites.AddGameObject(mPlayer);
             }
+            // Static
             else if (object.GetName() == "barrel" || object.GetName() == "crate")
             {
                 const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());                
                 Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
                 mAllSprites.AddGameObject(sprite);
             }
+            // Animations
             else
             {
-
+                if (IsSubString(object.GetName(), "palm"))
+                {
+                    TextureVector& animFrames = mGameAssets.GetTextureDirMap("palms").at(object.GetName());
+                    uint32_t animSpeed = ANIMATION_SPEED + RandomInteger(-1, 1);
+                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+                                                                                                 animFrames,
+                                                                                                 animSpeed);
+                    mAllSprites.AddGameObject(sprite);
+                }
             }
         }
     }

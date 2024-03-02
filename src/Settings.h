@@ -14,5 +14,6 @@ enum class FontId : uint32_t
 
 constexpr uint32_t WINDOW_WIDTH = 800;
 constexpr uint32_t WINDOW_HEIGHT = 600;
+constexpr uint32_t ANIMATION_SPEED = 6;
 
 extern std::unordered_map<FontId, std::string> FONT_MAP;

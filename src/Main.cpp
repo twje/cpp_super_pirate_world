@@ -28,6 +28,8 @@ public:
         : Layer(layerStack)        
         , mPosition(sf::Vector2f(windowSize) / 2.0f)
     {        
+        mGameAssets.LoadGlobalAssets();
+
         mGameView.setSize(sf::Vector2f(windowSize));
         mGameView.setCenter(sf::Vector2f(windowSize) / 2.0f);
         mHudView = mGameView;
@@ -40,7 +42,6 @@ public:
         mLevelMaps.emplace(5, "data/levels/5.json");
 
         mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, mGameAssets, *this, mGameView, mHudView);        
-        mGameAssets.LoadGlobalAssets();
     }
 
     virtual bool HandleEvent(const sf::Event& event) 

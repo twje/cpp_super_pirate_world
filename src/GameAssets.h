@@ -2,6 +2,9 @@
 
 // Includes
 //------------------------------------------------------------------------------
+// Game
+#include "Settings.h"
+
 // Core
 #include "Core/ResourceManager.h"
 
@@ -17,6 +20,11 @@ public:
         {
             locator.GetFontManager().RequireResource(filepath);
         }
+
+        // Textures organised by sub-directories
+        locator.GetTextureDirMapManager().RequireResource("graphics/level/palms");
+
+        mTextureDirMaps["palms"] = locator.GetTextureDirMapManager().GetResource("graphics/level/palms");
     }
 
     void UnloadGlobalAssets()
@@ -27,8 +35,13 @@ public:
         {
             locator.GetFontManager().ReleaseResource(filepath);
         }
+
+        // Textures organised by sub-directories
+        locator.GetTextureDirMapManager().RequireResource("graphics/level/palms");
     }
 
+    TextureMap& GetTextureDirMap(const std::string& id) const { return *mTextureDirMaps.at(id); }
+
 private:
-    std::unordered_map<std::string, TextureDirMapManager> mTextureDirMaps;
+    std::unordered_map<std::string, TextureMap*> mTextureDirMaps;
 };

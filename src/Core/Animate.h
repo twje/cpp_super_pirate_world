@@ -42,11 +42,15 @@ private:
 class Animation
 {
 public:
+    Animation(uint32_t speed)
+        : mSpeed(static_cast<float>(speed))
+    { }
+
     bool Update(const sf::Time& timeslice)
     {
         bool isFinished = false;
 
-        mFrameIndex += 7.0f * timeslice.asSeconds();
+        mFrameIndex += mSpeed * timeslice.asSeconds();
         if (mFrameIndex >= mCurrentSequence->Size())
         {
             mFrameIndex = 0;
@@ -89,4 +93,5 @@ private:
     std::unordered_map<std::string, AnimationSequence> mSequenceMap;
     AnimationSequence* mCurrentSequence = nullptr;
     float mFrameIndex = 0;
+    float mSpeed;
 };
