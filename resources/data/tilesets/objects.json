@@ -118,13 +118,13 @@
          "id":17,
          "image":"..\/..\/graphics\/objects\/big_chain.png",
          "imageheight":116,
-         "imagewidth":64
+         "imagewidth":16
         }, 
         {
          "id":18,
          "image":"..\/..\/graphics\/objects\/small_chain.png",
          "imageheight":62,
-         "imagewidth":64
+         "imagewidth":16
         }, 
         {
          "id":19,

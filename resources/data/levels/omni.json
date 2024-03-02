@@ -90,8 +90,8 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":64,
-                 "x":1344,
+                 "width":16,
+                 "x":1363,
                  "y":438
                 }, 
                 {
@@ -102,7 +102,7 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":64,
+                 "width":16,
                  "x":1434.67,
                  "y":382.333
                 }, 
@@ -953,11 +953,11 @@
         {
          "firstgid":1,
          "source":"..\/tilesets\/outside.json"
-        },
-    {
-        "firstgid": 49,
-        "source": "..\/tilesets\/items.json"
-    }, 
+        }, 
+        {
+         "firstgid":49,
+         "source":"..\/tilesets\/items.json"
+        }, 
         {
          "firstgid":54,
          "source":"..\/tilesets\/inside.json"
