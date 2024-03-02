@@ -159,14 +159,17 @@ private:
             // Static
             if (object.GetName() == "static")
             {
-                GameObject* sprite = AddSpriteObject(object);
-                mAllSprites.AddGameObject(sprite);                
+                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition());
+                mAllSprites.AddGameObject(sprite);
             }
             // Animated
             else
             {
                 std::string id = object.GetName() == "candle" ? "candle_light" : object.GetName();
-                GameObject* sprite = AddAnimationObject(object, mGameAssets.GetTextureVec(id), ANIMATION_SPEED);
+                GameObject* sprite = AddAnimationObject(object.GetPosition(),
+                                                        object.GetScale(),
+                                                        mGameAssets.GetTextureVec(id), 
+                                                        ANIMATION_SPEED);
                 mAllSprites.AddGameObject(sprite);
             }
         }
@@ -184,7 +187,7 @@ private:
             // Static
             else if (object.GetName() == "barrel" || object.GetName() == "crate")
             {
-                GameObject* sprite = AddSpriteObject(object);
+                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition());
                 mAllSprites.AddGameObject(sprite);
             }
             // Animated
@@ -193,17 +196,20 @@ private:
                 if (IsSubString(object.GetName(), "palm"))
                 {
                     uint32_t animSpeed = ANIMATION_SPEED + RandomInteger(-1, 1);
-                    GameObject* sprite = AddAnimationObject(object, 
+                    GameObject* sprite = AddAnimationObject(object.GetPosition(),
+                                                            object.GetScale(),
                                                             mGameAssets.GetTextureDirMap("palms").at(object.GetName()), 
                                                             animSpeed);
                     mAllSprites.AddGameObject(sprite);
                 }
                 else
-                {
-                    GameObject* sprite = AddAnimationObject(object, 
-                                                            mGameAssets.GetTextureVec(object.GetName()), 
-                                                            ANIMATION_SPEED);
-                    mAllSprites.AddGameObject(sprite);
+                {                   
+                        GameObject* sprite = AddAnimationObject(object.GetPosition(),
+                                                                object.GetScale(),
+                                                                mGameAssets.GetTextureVec(object.GetName()),
+                                                                ANIMATION_SPEED);
+                        mAllSprites.AddGameObject(sprite);
+                
                 }
             }
         }
@@ -223,7 +229,7 @@ private:
     {
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Items"))
         {            
-            GameObject* sprite = AddItemObject(object);
+            GameObject* sprite = AddItemObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition());
             mAllSprites.AddGameObject(sprite);
         }
     }
@@ -246,14 +252,14 @@ private:
                     if (row == 0)
                     {
                         GameObject* sprite = AddAnimationObject({ x, y },
-                                                                object, 
+                                                                object.GetScale(),
                                                                 mGameAssets.GetTextureVec("water_top"),
                                                                 ANIMATION_SPEED);
                         mAllSprites.AddGameObject(sprite);
                     }
                     else
                     {
-                        GameObject* sprite = AddSpriteObject({ x, y }, &mGameAssets.GetTexture("water_body"));
+                        GameObject* sprite = AddSpriteObject(mGameAssets.GetTexture("water_body"), { x, y });
                         mAllSprites.AddGameObject(sprite);
                     }
                 }
@@ -261,32 +267,20 @@ private:
         }
     }
 
-    GameObject* AddSpriteObject(const TiledMapObject& object)
-    {
-        const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
-        return AddSpriteObject(object.GetPosition(), texture);
+    GameObject* AddItemObject(const sf::Texture& texture, const sf::Vector2f& position)
+    { 
+        return mGameObjectManager.CreateGameObject<Item>(texture, position);
     }
 
-    GameObject* AddSpriteObject(const sf::Vector2f& position, const sf::Texture* texture)
+    GameObject* AddSpriteObject(const sf::Texture& texture, const sf::Vector2f& position)
     {
-        return mGameObjectManager.CreateGameObject<Sprite>(*texture, position);
+        return mGameObjectManager.CreateGameObject<Sprite>(texture, position);
     }
 
-    GameObject* AddItemObject(const TiledMapObject& object)
-    {
-        const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
-        return mGameObjectManager.CreateGameObject<Item>(*texture, object.GetPosition());
-    }
-
-    GameObject* AddAnimationObject(const TiledMapObject& object, TextureVector& animFrames, uint32_t animSpeed)
-    {
-        return AddAnimationObject(object.GetPosition(), object, animFrames, animSpeed);
-    }
-
-    GameObject* AddAnimationObject(const sf::Vector2f& position, const TiledMapObject& object, TextureVector& animFrames, uint32_t animSpeed)
+    GameObject* AddAnimationObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
     {
         return mGameObjectManager.CreateGameObject<AnimatedSprite>(position,
-                                                                   object.GetScale(),
+                                                                   scale,
                                                                    animFrames,
                                                                    animSpeed);
     }
