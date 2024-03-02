@@ -13,6 +13,32 @@
 #include "Core/GameObjectManager.h"
 
 //------------------------------------------------------------------------------
+class Sprite : public GameObject
+{
+public:
+    Sprite(const sf::Texture& texture, const sf::Vector2f& position)
+        : mSprite(texture)
+    {
+        mSprite.setPosition(position);
+    }
+
+    virtual FloatRect GetGlobalBounds() const 
+    {  
+        return GetTransform().transformRect(mSprite.getLocalBounds());
+    }
+
+    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
+    {
+        sf::RenderStates statesCopy(states);
+        statesCopy.transform *= GetTransform();
+        target.draw(mSprite, statesCopy);
+    }
+
+private:
+    sf::Sprite mSprite;
+};
+
+//------------------------------------------------------------------------------
 class Level
 {
 public:
@@ -22,19 +48,26 @@ public:
         , mGameCallbacks(gameCallbacks)
         , mGameView(gameView)
         , mHudView(hudView)
+        , mGameObjectManager(GameObjectManager::Instance())
         , mPlayer(nullptr)
     { 
         mLevelMap.SetDrawObjectLayers(false);
-
+        
         // Objects
         for(const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Objects"))
         {            
             if (object.GetName() == "player")
             {
-                mPlayer = GameObjectManager::Instance().CreateGameObject<Player>(sf::Vector2f());
+                mPlayer = mGameObjectManager.CreateGameObject<Player>(sf::Vector2f());
                 mAllSprites.AddGameObject(mPlayer);
             }
-        }        
+            else if (object.GetName() == "barrel" || object.GetName() == "crate")
+            {
+                const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());                
+                Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
+                mAllSprites.AddGameObject(sprite);
+            }
+        }
     }
 
     bool HandleEvent(const sf::Event& event)
@@ -97,6 +130,7 @@ private:
     IGame& mGameCallbacks;
     sf::View& mGameView;
     sf::View& mHudView;
+    GameObjectManager& mGameObjectManager;
     Player* mPlayer;
     Group mAllSprites;    
 };

@@ -23,6 +23,7 @@ public:
     bool GetDrawObjectLayers() const { return mTiledMapRenderer->GetDrawObjectLayers(); }
     void SetDrawObjectLayers(bool flag) { mTiledMapRenderer->SetDrawObjectLayers(flag); }
     void ToggleDrawObjectLayers() { mTiledMapRenderer->ToggleDrawObjectLayers(); }
+    const sf::Texture* GetTexture(uint32_t gid) const { return mTiledMap->GetTetxure(gid); }
 
     void Draw(sf::RenderWindow& window)
     {
