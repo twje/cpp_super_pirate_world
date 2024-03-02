@@ -46,10 +46,11 @@ private:
 class AnimatedSprite : public GameObject
 {
 public:
-    AnimatedSprite(const sf::Vector2f& position, TextureVector& animFrames, uint32_t animSpeed)
+    AnimatedSprite(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
         : mAnimation(animSpeed)
         , mSprite(*animFrames[0])
     {     
+        SetScale(scale);
         SetPosition(position);
 
         auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
@@ -123,8 +124,18 @@ public:
                     TextureVector& animFrames = mGameAssets.GetTextureDirMap("palms").at(object.GetName());
                     uint32_t animSpeed = ANIMATION_SPEED + RandomInteger(-1, 1);
                     AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+                                                                                                 object.GetScale(),
                                                                                                  animFrames,
                                                                                                  animSpeed);
+                    mAllSprites.AddGameObject(sprite);
+                }
+                else
+                {
+                    TextureVector& animFrames = mGameAssets.GetTextureVecMap(object.GetName());
+                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+                                                                                                 object.GetScale(),
+                                                                                                 animFrames,
+                                                                                                 ANIMATION_SPEED);
                     mAllSprites.AddGameObject(sprite);
                 }
             }
