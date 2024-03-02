@@ -5,6 +5,7 @@
 // Game
 #include "Settings.h"
 #include "GameData.h"
+#include "GameAssets.h"
 #include "Interfaces.h"
 #include "LevelMap.h"
 #include "Level.h"
@@ -38,9 +39,9 @@ public:
         mLevelMaps.emplace(4, "data/levels/4.json");
         mLevelMaps.emplace(5, "data/levels/5.json");
 
-        mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, *this, mGameView, mHudView);
-        LoadGlobalAssets();
-    }    
+        mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, mGameAssets, *this, mGameView, mHudView);        
+        mGameAssets.LoadGlobalAssets();
+    }
 
     virtual bool HandleEvent(const sf::Event& event) 
     { 
@@ -65,25 +66,10 @@ public:
 
     void UnloadGlobalAssets()
     {
-        ResourceLocator& locator = ResourceLocator::GetInstance();
-
-        for (auto& [_, filepath] : FONT_MAP)
-        {
-            locator.GetFontManager().ReleaseResource(filepath);
-        }
+        mGameAssets.UnloadGlobalAssets();
     }
 
 private:
-    void LoadGlobalAssets()
-    {
-        ResourceLocator& locator = ResourceLocator::GetInstance();
-
-        for (auto& [_, filepath] : FONT_MAP)
-        {
-            locator.GetFontManager().RequireResource(filepath);
-        }        
-    }
-
     virtual void SwitchLevel() override
     {
         throw NotImplementedException();
@@ -95,6 +81,7 @@ private:
     std::unordered_map<uint32_t, LevelMap> mLevelMaps;
     sf::Vector2f mPosition;
     GameData mGameData;
+    GameAssets mGameAssets;
     std::unique_ptr<Level> mCurrentLevel;
 };
 

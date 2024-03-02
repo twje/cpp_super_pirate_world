@@ -6,6 +6,7 @@
 #include "Interfaces.h"
 #include "LevelMap.h"
 #include "GameData.h"
+#include "GameAssets.h"
 #include "Player.h"
 #include "Debug.h"
 
@@ -42,9 +43,10 @@ private:
 class Level
 {
 public:
-    Level(LevelMap& levelMap, GameData& gameData, IGame& gameCallbacks, sf::View& gameView, sf::View& hudView)
+    Level(LevelMap& levelMap, GameData& gameData, GameAssets& gameAssets, IGame& gameCallbacks, sf::View& gameView, sf::View& hudView)
         : mLevelMap(levelMap)
-        , mGameData(gameData)    
+        , mGameData(gameData) 
+        , mGameAssets(gameAssets)
         , mGameCallbacks(gameCallbacks)
         , mGameView(gameView)
         , mHudView(hudView)
@@ -66,6 +68,10 @@ public:
                 const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());                
                 Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
                 mAllSprites.AddGameObject(sprite);
+            }
+            else
+            {
+
             }
         }
     }
@@ -127,10 +133,11 @@ private:
     
     LevelMap& mLevelMap;
     GameData& mGameData;
+    GameAssets& mGameAssets;
     IGame& mGameCallbacks;
     sf::View& mGameView;
     sf::View& mHudView;
     GameObjectManager& mGameObjectManager;
     Player* mPlayer;
-    Group mAllSprites;    
+    Group mAllSprites;
 };
