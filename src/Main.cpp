@@ -14,8 +14,10 @@
 #include <SFML/Graphics.hpp>
 
 // Core
+#include "Core/CustomExceptions.h"
 #include "Core/GameObjectManager.h"
 #include "Core/LayerStack.h"
+#include "Core/ResourceManager.h"
 
 //------------------------------------------------------------------------------
 class Game : public Layer, public IGame
@@ -36,6 +38,7 @@ public:
         mLevelMaps.emplace(5, "data/levels/5.json");
 
         mCurrentLevel = std::make_unique<Level>(mLevelMaps.at(mGameData.GetCurrentLevel()), mGameData, *this);
+        LoadGlobalAssets();
     }    
 
     virtual bool HandleEvent(const sf::Event& event) 
@@ -76,10 +79,30 @@ public:
         return updateNextLayer;
     }
 
+    void UnloadGlobalAssets()
+    {
+        ResourceLocator& locator = ResourceLocator::GetInstance();
+
+        for (auto& [_, filepath] : FONT_MAP)
+        {
+            locator.GetFontManager().ReleaseResource(filepath);
+        }
+    }
+
 private:
+    void LoadGlobalAssets()
+    {
+        ResourceLocator& locator = ResourceLocator::GetInstance();
+
+        for (auto& [_, filepath] : FONT_MAP)
+        {
+            locator.GetFontManager().RequireResource(filepath);
+        }        
+    }
+
     virtual void SwitchLevel() override
     {
-        // implement
+        throw NotImplementedException();
     }
 
     Group mAllSprites;
@@ -103,6 +126,7 @@ int main()
 
     LayerStack layerStack;
     layerStack.PushLayer(std::make_unique<Game>(layerStack, window.getSize()));    
+    Game* game = static_cast<Game*>(layerStack.GetTopLayer());
 
     while (window.isOpen())
     {
@@ -111,6 +135,7 @@ int main()
         {
             if (event.type == sf::Event::Closed)
             {
+                game->UnloadGlobalAssets();
                 window.close();
             }
             else

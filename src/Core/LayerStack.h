@@ -13,6 +13,15 @@
 class LayerStack
 {
 public:
+    Layer* GetTopLayer() 
+    {  
+        if (mLayers.size() > 0)
+        {
+            return mLayers.back().get();
+        }
+        return nullptr;
+    }
+
     void PushLayer(std::unique_ptr<Layer> layer)
     {
         if (layer)

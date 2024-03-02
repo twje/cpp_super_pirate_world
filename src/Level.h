@@ -7,6 +7,7 @@
 #include "LevelMap.h"
 #include "GameData.h"
 #include "Player.h"
+#include "Debug.h"
 
 //------------------------------------------------------------------------------
 class Level
@@ -62,6 +63,13 @@ public:
     bool Draw(sf::RenderWindow& window)
     {
         mLevelMap.Draw(window);
+
+        std::string foo = "A";
+        if (mLevelMap.GetDrawObjectLayers())
+        {
+            foo = "B";
+        }
+        DrawText(window, FontId::DEBUG_FONT, foo, sf::Vector2f());
 
         return true;
     }

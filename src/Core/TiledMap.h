@@ -421,6 +421,7 @@ public:
         }
     }
 
+    bool GetDrawObjectLayers() const { return mDrawObjectLayers; }
     void SetDrawObjectLayers(bool flag) { mDrawObjectLayers = flag; }
     void ToggleDrawObjectLayers() { mDrawObjectLayers = !mDrawObjectLayers; }
 
