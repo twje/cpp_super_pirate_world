@@ -46,7 +46,7 @@ public:
 
     virtual bool HandleEvent(const sf::Event& event) 
     { 
-        return mCurrentLevel->HandleEvent(event);
+        return mCurrentLevel->HandleEvent(event);        
     };
 
     virtual void Resize(const sf::Vector2f& size) override
@@ -57,12 +57,14 @@ public:
 
     virtual bool Update(const sf::Time& timeslice) override
     {
-        return mCurrentLevel->Update(timeslice);        
+        return mCurrentLevel->Update(timeslice);                
     }
 
     virtual bool Draw(sf::RenderWindow& window) override
     {
         return mCurrentLevel->Draw(window);
+        //mLevelMaps.at(0).Draw(window);
+        return true;
     }
 
     void UnloadGlobalAssets()

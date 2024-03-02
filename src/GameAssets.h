@@ -30,7 +30,7 @@ public:
         }
 
         // Textures in directory
-        for (auto& [id, filepath] : GetTextureVecMapLookup())
+        for (auto& [id, filepath] : GetTextureVecLookup())
         {
             locator.GetTextureVectorManager().RequireResource(filepath);
         }
@@ -52,7 +52,7 @@ public:
         }        
 
         // Textures in directory
-        for (auto& [_, filepath] : GetTextureVecMapLookup())
+        for (auto& [_, filepath] : GetTextureVecLookup())
         {
             locator.GetTextureVectorManager().ReleaseResource(filepath);
         }
@@ -67,10 +67,10 @@ public:
         return *locator.GetTextureDirMapManager().GetResource(lookup.at(id));
     }
     
-    TextureVector& GetTextureVecMap(const std::string& id) const 
+    TextureVector& GetTextureVec(const std::string& id) const 
     { 
         ResourceLocator& locator = ResourceLocator::GetInstance();
-        AssetLookup& lookup = GetTextureVecMapLookup();
+        AssetLookup& lookup = GetTextureVecLookup();
         assert(lookup.count(id) > 0);
 
         return *locator.GetTextureVectorManager().GetResource(lookup.at(id));
@@ -89,7 +89,7 @@ private:
         return lookup;
     }
 
-    static AssetLookup& GetTextureVecMapLookup()
+    static AssetLookup& GetTextureVecLookup()
     {
         static AssetLookup lookup = { 
             {"flag", "graphics/level/flag"},

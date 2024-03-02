@@ -87,7 +87,7 @@ public:
         else if (object.hasFlipFlags(tson::TileFlipFlags::Horizontally))
         {
             throw NotImplementedException();
-        }
+        }        
     }
 
     TiledMapObjectType GetType() const { return mType; }

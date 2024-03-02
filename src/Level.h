@@ -138,6 +138,9 @@ private:
         SetupBackgroundDetails();
         SetupObjects();
         SetupMovingObjects();
+        SetupEnemies();
+        SetupItems();
+        SetupWater();
     }
 
     void SetupBackgroundDetails()
@@ -147,24 +150,14 @@ private:
             // Static
             if (object.GetName() == "static")
             {
-                const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
-                Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
-                mAllSprites.AddGameObject(sprite);
+                GameObject* sprite = AddSpriteObject(object);
+                mAllSprites.AddGameObject(sprite);                
             }
             // Animated
             else
             {
-                std::string id = object.GetName();
-                if (object.GetName() == "candle")
-                {
-                    id = "candle_light";
-                }
-
-                TextureVector& animFrames = mGameAssets.GetTextureVecMap(id);
-                AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
-                                                                                             object.GetScale(),
-                                                                                             animFrames,
-                                                                                             ANIMATION_SPEED);
+                std::string id = object.GetName() == "candle" ? "candle_light" : object.GetName();
+                GameObject* sprite = AddAnimationObject(object, mGameAssets.GetTextureVec(id), ANIMATION_SPEED);
                 mAllSprites.AddGameObject(sprite);
             }
         }
@@ -182,8 +175,7 @@ private:
             // Static
             else if (object.GetName() == "barrel" || object.GetName() == "crate")
             {
-                const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
-                Sprite* sprite = mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
+                GameObject* sprite = AddSpriteObject(object);
                 mAllSprites.AddGameObject(sprite);
             }
             // Animated
@@ -191,21 +183,17 @@ private:
             {
                 if (IsSubString(object.GetName(), "palm"))
                 {
-                    TextureVector& animFrames = mGameAssets.GetTextureDirMap("palms").at(object.GetName());
                     uint32_t animSpeed = ANIMATION_SPEED + RandomInteger(-1, 1);
-                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
-                        object.GetScale(),
-                        animFrames,
-                        animSpeed);
+                    GameObject* sprite = AddAnimationObject(object, 
+                                                            mGameAssets.GetTextureDirMap("palms").at(object.GetName()), 
+                                                            animSpeed);
                     mAllSprites.AddGameObject(sprite);
                 }
                 else
                 {
-                    TextureVector& animFrames = mGameAssets.GetTextureVecMap(object.GetName());
-                    AnimatedSprite* sprite = mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
-                        object.GetScale(),
-                        animFrames,
-                        ANIMATION_SPEED);
+                    GameObject* sprite = AddAnimationObject(object, 
+                                                            mGameAssets.GetTextureVec(object.GetName()), 
+                                                            ANIMATION_SPEED);
                     mAllSprites.AddGameObject(sprite);
                 }
             }
@@ -215,7 +203,39 @@ private:
     void SetupMovingObjects()
     {
 
+    }        
+
+    void SetupEnemies()
+    {
+
     }
+
+    void SetupItems()
+    {
+        for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Items"))
+        {            
+            // import_sub_folders
+        }
+    }
+
+    void SetupWater()
+    {
+
+    }
+
+    GameObject* AddSpriteObject(const TiledMapObject& object)
+    {
+        const sf::Texture* texture = mLevelMap.GetTexture(object.GetGid());
+        return mGameObjectManager.CreateGameObject<Sprite>(*texture, object.GetPosition());
+    }
+
+    GameObject* AddAnimationObject(const TiledMapObject& object, TextureVector& animFrames, uint32_t animSpeed)
+    {
+        return mGameObjectManager.CreateGameObject<AnimatedSprite>(object.GetPosition(),
+                                                                   object.GetScale(),
+                                                                   animFrames,
+                                                                   animSpeed);
+    }    
 
     void DrawGame(sf::RenderWindow& window)
     {
