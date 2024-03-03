@@ -65,6 +65,7 @@ public:
         , mScale(1.0f, 1.0f)
         , mSize(ConvertToSFMLVector2f(object.getSize()))
         , mName(object.getName())
+        , mPropertyCollection(object.getProperties())
     {
         mPosition = ConvertToSFMLVector2f(object.getPosition());
         mPosition.x = std::round(mPosition.x);
@@ -88,7 +89,7 @@ public:
         else if (object.hasFlipFlags(tson::TileFlipFlags::Horizontally))
         {
             throw NotImplementedException();
-        }        
+        }
     }
 
     TiledMapObjectType GetType() const { return mType; }
@@ -98,6 +99,13 @@ public:
     const sf::Vector2f& GetScale() const { return mScale; }
     const sf::Vector2f& GetSize() const { return mSize; }
     const std::string& GetName() const { return mName; }
+
+    template<typename T>
+    T GetPropertyValue(const std::string& name) const
+    {
+        //Remove const to call method
+        return const_cast<TiledMapObject*>(this)->mPropertyCollection.getValue<T>(name);
+    }
 
 private:
     void ComputeTextureRegion(tson::Layer& layer)
@@ -115,6 +123,7 @@ private:
     sf::Vector2f mScale;
     sf::Vector2f mSize;
     std::string mName;
+    tson::PropertyCollection mPropertyCollection;
 };
 
 //------------------------------------------------------------------------------

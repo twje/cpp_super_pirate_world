@@ -16,9 +16,12 @@
 #include "Core/RandomUtils.h"
 #include "Core/Animate.h"
 
+// System
+#include <cmath> 
+
 //------------------------------------------------------------------------------
 class Sprite : public GameObject
-{
+{    
 public:
     Sprite(const sf::Texture& texture, const sf::Vector2f& position)
         : mSprite(texture)
@@ -43,12 +46,67 @@ private:
 };
 
 //------------------------------------------------------------------------------
-class Item : public Sprite
+class Spike : public GameObject
 {
 public:
-    Item(const sf::Texture& texture, const sf::Vector2f& position)
-        : Sprite(texture, position)
-    { }
+    Spike(const sf::Texture& texture, const sf::Vector2f& position, int32_t radius, uint32_t speed,
+          int32_t startAngle, int32_t endAngle)
+        : mSprite(texture)
+        , mCenter(position)
+        , mRadius(radius)
+        , mSpeed(speed)
+        , mAngle(startAngle)
+        , mStartAngle(startAngle)
+        , mEndAngle(endAngle)
+        , mDirection(1.0f)
+        , mIsFullCircle(endAngle == -1.0f)
+    {                
+        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
+        UpdatePosition();        
+    }
+
+    virtual FloatRect GetGlobalBounds() const
+    {
+        return GetTransform().transformRect(mSprite.getLocalBounds());
+    }
+
+    virtual void Update(const sf::Time& timeslice)
+    {
+        mAngle += mDirection * mSpeed * timeslice.asSeconds();
+
+        if (!mIsFullCircle)
+        {
+            if (mAngle >= mEndAngle) { mDirection = -1.0f; }
+            if (mAngle < mStartAngle) { mDirection = 1.0f; }
+        }
+
+        UpdatePosition();
+    }
+
+    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
+    {
+        sf::RenderStates statesCopy(states);
+        statesCopy.transform *= GetTransform();
+        target.draw(mSprite, statesCopy);
+    }
+
+private:
+    void UpdatePosition()
+    {
+        float x = mCenter.x + std::cos(sf::degrees(mAngle).asRadians()) * mRadius;
+        float y = mCenter.y + std::sin(sf::degrees(mAngle).asRadians()) * mRadius;
+        SetPosition({ x, y });
+    }
+
+    sf::Sprite mSprite;
+    sf::Vector2f mCenter;
+    float mDirection;
+    float mRadius;
+    float mSpeed;
+    float mAngle;
+    float mStartAngle;
+    float mEndAngle;
+    bool mIsFullCircle;
 };
 
 //------------------------------------------------------------------------------
@@ -80,6 +138,7 @@ public:
     {
         mAnimation.Update(timeslice);
         mSprite.setTexture(mAnimation.GetTexture(), true);
+        OnAnimationUpdate(mAnimation.GetTexture());
     }
 
     virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
@@ -89,9 +148,27 @@ public:
         target.draw(mSprite, statesCopy);
     }
 
+    virtual void OnAnimationUpdate(const sf::Texture& texture) { }
+
 private:
     Animation mAnimation;    
     sf::Sprite mSprite;
+};
+
+//------------------------------------------------------------------------------
+class Item : public AnimatedSprite
+{
+public:
+    Item(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+        : AnimatedSprite(position, scale, animFrames, animSpeed)
+    { 
+        SetOrigin(sf::Vector2f(animFrames[0]->getSize()) * 0.5f);
+    }
+
+    virtual void OnAnimationUpdate(const sf::Texture& texture) override
+    {
+        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -107,7 +184,7 @@ public:
         , mHudView(hudView)
         , mGameObjectManager(GameObjectManager::Instance())
         , mPlayer(nullptr)
-    { 
+    {
         mLevelMap.SetDrawObjectLayers(false);
         Setup();
     }
@@ -217,7 +294,39 @@ private:
 
     void SetupMovingObjects()
     {
+        for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Moving Objects"))
+        {
+            if (object.GetName() == "spike")
+            {
+                int32_t radius = object.GetPropertyValue<int32_t>("radius");
+                int32_t speed = object.GetPropertyValue<int32_t>("speed");
+                int32_t startAngle = object.GetPropertyValue<int32_t>("start_angle");
+                int32_t endAngle = object.GetPropertyValue<int32_t>("end_angle");
+                
+                GameObject* sprite = AddSpikeObject(mGameAssets.GetTexture("spike"),
+                                                    object.GetPosition(),
+                                                    radius,
+                                                    speed,
+                                                    startAngle,
+                                                    endAngle);
+                mAllSprites.AddGameObject(sprite);
+                
+                for (int32_t newRadius = 0; newRadius < radius; newRadius += 20)
+                {
+                    GameObject* sprite = AddSpikeObject(mGameAssets.GetTexture("spike_chain"),
+                                                        object.GetPosition(),
+                                                        newRadius,
+                                                        speed,
+                                                        startAngle,
+                                                        endAngle);
+                    mAllSprites.AddGameObject(sprite);
+                }
+            }
+            else
+            {
 
+            }
+        }
     }        
 
     void SetupEnemies()
@@ -228,8 +337,11 @@ private:
     void SetupItems()
     {
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Items"))
-        {            
-            GameObject* sprite = AddItemObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition());
+        {                    
+            GameObject* sprite = AddItemObject(object.GetPosition() + mLevelMap.GetTileSize() * 0.5f,
+                                               object.GetScale(),
+                                               mGameAssets.GetTextureDirMap("items").at(object.GetName()),
+                                               ANIMATION_SPEED);
             mAllSprites.AddGameObject(sprite);
         }
     }
@@ -267,9 +379,15 @@ private:
         }
     }
 
-    GameObject* AddItemObject(const sf::Texture& texture, const sf::Vector2f& position)
+    GameObject* AddSpikeObject(const sf::Texture& texture, const sf::Vector2f& position, int32_t radius, int32_t speed, 
+                               int32_t startAngle, int32_t endAngle)
+    {
+        return mGameObjectManager.CreateGameObject<Spike>(texture, position, radius, speed, startAngle, endAngle);
+    }
+
+    GameObject* AddItemObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
     { 
-        return mGameObjectManager.CreateGameObject<Item>(texture, position);
+        return mGameObjectManager.CreateGameObject<Item>(position, scale, animFrames, animSpeed);
     }
 
     GameObject* AddSpriteObject(const sf::Texture& texture, const sf::Vector2f& position)
