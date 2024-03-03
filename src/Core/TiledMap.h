@@ -361,25 +361,10 @@ public:
             tileset.UnloadTextures();            
         }
     }
-
+       
     sf::Texture* GetTetxure(uint32_t gid) const { return mTextureLookup.at(gid); }
-
-    const std::vector<TiledMapLayer>& GetLayers() { return mLayers; }
+    const std::vector<TiledMapLayer>& GetLayers() const { return mLayers; }    
     const sf::Vector2f GetTileSize() const { return mTileSize; }
-    
-    const std::vector<TiledMapObject>& GetObjectsByLayerName(std::string layerName) const
-    {
-        for (const TiledMapLayer& layer : mLayers)
-        {
-            if (layer.GetName() == layerName)
-            {
-                return layer.GetObjects();
-            }
-        }
-
-        static const std::vector<TiledMapObject> emptyVector { };
-        return emptyVector;
-    }
 
 private:
     std::unordered_map<uint32_t, sf::Texture*> mTextureLookup;
@@ -395,7 +380,6 @@ class TiledMapRenderer
 public:
     TiledMapRenderer(TiledMap& tiledMap)
         : mTiledMap(tiledMap)
-        , mDrawObjectLayers(true)
     { 
         mTiledMap.LoadTextures();
     }
@@ -407,57 +391,70 @@ public:
 
     void Draw(sf::RenderTarget& window)
     {
-        sf::Vector2f tileSize = mTiledMap.GetTileSize();
-
         for (const TiledMapLayer& layer : mTiledMap.GetLayers())
         {
-            if (layer.GetType() == TiledMapLayerType::TileLayer)
-            {                
-                for (uint32_t y = 0; y < layer.GetTileCount().y; y++)
-                {
-                    for (uint32_t x = 0; x < layer.GetTileCount().x; x++)
-                    {
-                        const TiledMapTile* tile = layer.GetTile(x, y);
-                        
-                        if (tile != nullptr)
-                        {
-                            sf::Texture* texture = mTiledMap.GetTetxure(tile->GetGid());
-                            sf::Sprite sprite(*texture);
-                            sprite.setTextureRect(tile->GetTextureRegion());
-                            sprite.setPosition({ x * tileSize.x, y * tileSize.y });
-                            sprite.setScale(tile->GetScale());
+            Draw(window, layer);
+        }
+    }
 
-                            window.draw(sprite);
-                        }
-                    }
-                }
-            }
-            else if (layer.GetType() == TiledMapLayerType::ObjectGroup)
+    void Draw(sf::RenderTarget& window, uint32_t index)
+    {
+        Draw(window, mTiledMap.GetLayers().at(index));
+    }
+
+    void Draw(sf::RenderTarget& window, const TiledMapLayer& layer)
+    {
+        if (layer.GetType() == TiledMapLayerType::TileLayer)
+        {
+            DrawTileLayer(window, layer);
+        }
+        else if (layer.GetType() == TiledMapLayerType::ObjectGroup)
+        {
+            DrawObjectGroup(window, layer);
+        }
+    }
+    
+private:
+    void DrawTileLayer(sf::RenderTarget& window, const TiledMapLayer& layer)
+    {
+        sf::Vector2f tileSize = mTiledMap.GetTileSize();
+
+        for (uint32_t y = 0; y < layer.GetTileCount().y; y++)
+        {
+            for (uint32_t x = 0; x < layer.GetTileCount().x; x++)
             {
-                if (!mDrawObjectLayers) { continue; }
+                const TiledMapTile* tile = layer.GetTile(x, y);
 
-                for (const TiledMapObject& object : layer.GetObjects())
+                if (tile != nullptr)
                 {
-                    if (object.GetType() == TiledMapObjectType::Object)
-                    {
-                        sf::Texture* texture = mTiledMap.GetTetxure(object.GetGid());
-                        sf::Sprite sprite(*texture);
-                        sprite.setTextureRect(object.GetTextureRegion());
-                        sprite.setPosition(object.GetPosition());
-                        sprite.setScale(object.GetScale());
+                    sf::Texture* texture = mTiledMap.GetTetxure(tile->GetGid());
+                    sf::Sprite sprite(*texture);
+                    sprite.setTextureRect(tile->GetTextureRegion());
+                    sprite.setPosition({ x * tileSize.x, y * tileSize.y });
+                    sprite.setScale(tile->GetScale());
 
-                        window.draw(sprite);
-                    }
+                    window.draw(sprite);
                 }
             }
         }
     }
 
-    bool GetDrawObjectLayers() const { return mDrawObjectLayers; }
-    void SetDrawObjectLayers(bool flag) { mDrawObjectLayers = flag; }
-    void ToggleDrawObjectLayers() { mDrawObjectLayers = !mDrawObjectLayers; }
+    void DrawObjectGroup(sf::RenderTarget& window, const TiledMapLayer& layer)
+    {
+        for (const TiledMapObject& object : layer.GetObjects())
+        {
+            if (object.GetType() == TiledMapObjectType::Object)
+            {
+                sf::Texture* texture = mTiledMap.GetTetxure(object.GetGid());
+                sf::Sprite sprite(*texture);
+                sprite.setTextureRect(object.GetTextureRegion());
+                sprite.setPosition(object.GetPosition());
+                sprite.setScale(object.GetScale());
 
-private:
+                window.draw(sprite);
+            }
+        }
+    }
+
     TiledMap& mTiledMap;
-    bool mDrawObjectLayers;
 };

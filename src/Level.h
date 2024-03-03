@@ -26,11 +26,15 @@ public:
         , mGameAssets(gameAssets)
         , mGameCallbacks(gameCallbacks)
         , mGameView(gameView)
-        , mHudView(hudView)
-        , mGameObjectManager(GameObjectManager::Instance())
+        , mHudView(hudView)        
         , mPlayer(nullptr)
     {
-        mLevelMap.SetDrawObjectLayers(false);
+        mLevelMap.SetDrawObjectLayersEnabled(false);
+        mLevelMap.AddDrawabeLayer("BG", DEPTHS.at("bg tiles"));
+        mLevelMap.AddDrawabeLayer("FG", DEPTHS.at("bg tiles"));
+        mLevelMap.AddDrawabeLayer("Terrain", DEPTHS.at("main"));
+        mLevelMap.AddDrawabeLayer("Platforms", DEPTHS.at("main"));
+
         Setup();
     }
 
@@ -38,7 +42,7 @@ public:
     {
         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::D)
         {
-            mLevelMap.ToggleDrawObjectLayers();
+            mLevelMap.ToggleDrawObjectLayersEnabled();
         }
 
         return true;
@@ -74,8 +78,11 @@ private:
         SetupWater();
     }
 
+#pragma region SetupObjects
     void SetupBackgroundDetails()
     {
+
+
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("BG details"))
         {
             // Static
@@ -103,7 +110,8 @@ private:
         {
             if (object.GetName() == "player")
             {
-                mPlayer = mGameObjectManager.CreateGameObject<Player>(sf::Vector2f());
+                GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+                mPlayer = gameObjectManager.CreateGameObject<Player>(sf::Vector2f());
                 mAllSprites.AddGameObject(mPlayer);
             }
             // Static
@@ -182,13 +190,13 @@ private:
                 }
 
                 int32_t speed = object.GetPropertyValue<int32_t>("speed");
-                GameObject* sprite = CreateMovementSpriteObject(startPos,
-                                                                endPos,
-                                                                mIsVertMovement,
-                                                                speed,
-                                                                object.GetScale(),
-                                                                mGameAssets.GetTextureVec(object.GetName()),
-                                                                ANIMATION_SPEED);
+                GameObject* sprite = AddMovementSpriteObject(startPos,
+                                                             endPos,
+                                                             mIsVertMovement,
+                                                             speed,
+                                                             object.GetScale(),
+                                                             mGameAssets.GetTextureVec(object.GetName()),
+                                                             ANIMATION_SPEED);
                 mAllSprites.AddGameObject(sprite);
 
                 if (object.GetName() == "saw")
@@ -215,12 +223,6 @@ private:
                 }
             }
         }
-    }
-
-    GameObject* CreateMovementSpriteObject(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
-                                           const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
-    {
-        return mGameObjectManager.CreateGameObject<MovingSprite>(startPos, endPos, isVertMovement, speed, scale, animFrames, animSpeed);
     }
 
     void SetupEnemies()
@@ -290,56 +292,75 @@ private:
             }
         }
     }
+#pragma endregion
+
+#pragma region ObjectFactories
+    GameObject* AddMovementSpriteObject(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
+        const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    {
+        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+        return gameObjectManager.CreateGameObject<MovingSprite>(startPos, endPos, isVertMovement, speed, scale, animFrames, animSpeed);
+    }
 
     GameObject* AddSpikeObject(const sf::Texture& texture, const sf::Vector2f& position, int32_t radius, int32_t speed, 
                                int32_t startAngle, int32_t endAngle)
     {
-        return mGameObjectManager.CreateGameObject<Spike>(texture, position, radius, speed, startAngle, endAngle);
+        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+        return gameObjectManager.CreateGameObject<Spike>(texture, position, radius, speed, startAngle, endAngle);
     }
 
     GameObject* AddItemObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
     { 
-        return mGameObjectManager.CreateGameObject<Item>(position, scale, animFrames, animSpeed);
+        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+        return gameObjectManager.CreateGameObject<Item>(position, scale, animFrames, animSpeed);
     }
 
     GameObject* AddSpriteObject(const sf::Texture& texture, const sf::Vector2f& position)
     {
-        return mGameObjectManager.CreateGameObject<Sprite>(texture, position);
+        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+        return gameObjectManager.CreateGameObject<Sprite>(texture, position);
     }
 
     GameObject* AddAnimationObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
     {
-        return mGameObjectManager.CreateGameObject<AnimatedSprite>(position,
-                                                                   scale,
-                                                                   animFrames,
-                                                                   animSpeed);
+        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+        return gameObjectManager.CreateGameObject<AnimatedSprite>(position,
+                                                                  scale,
+                                                                  animFrames,
+                                                                  animSpeed);
     }
     
     GameObject* AddToothObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
     {
-        return mGameObjectManager.CreateGameObject<Tooth>(position,
-                                                          scale,
-                                                          animFrames,
-                                                          animSpeed);
+        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+        return gameObjectManager.CreateGameObject<Tooth>(position,
+                                                         scale,
+                                                         animFrames,
+                                                         animSpeed);
     }
     
     GameObject* AddShellObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureMap& animFrames, uint32_t animSpeed)
     {
-        return mGameObjectManager.CreateGameObject<Shell>(position,
-                                                          scale,
-                                                          animFrames,
-                                                          animSpeed);
+        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
+        return gameObjectManager.CreateGameObject<Shell>(position,
+                                                         scale,
+                                                         animFrames,
+                                                         animSpeed);
     }
+#pragma endregion
 
     void DrawGame(sf::RenderWindow& window)
     {
         window.setView(mGameView);
         
-        mLevelMap.Draw(window);
-
-        for (GameObject* object : mAllSprites)
+        for (const uint32_t& depth : GetSortedDepths())
         {
-            window.draw(*object);
+            mLevelMap.Draw(window, depth);
+
+            for (const GameObject* object : mDrawGroups[depth])
+            {
+                window.draw(*object);
+            }
         }
     }
 
@@ -348,21 +369,25 @@ private:
         window.setView(mHudView);
 
         std::string objectRenderStatus = "Objects Rendered by Level";
-        if (mLevelMap.GetDrawObjectLayers())
+        if (mLevelMap.IsDrawObjectLayersEnabled())
         {
             objectRenderStatus = "Objects Rendered by TiledMap";
         }
 
         DrawText(window, FontId::DEBUG_FONT, objectRenderStatus, sf::Vector2f(10.0f, 10.f));
-    }   
-
+    }
+    
     LevelMap& mLevelMap;
     GameData& mGameData;
     GameAssets& mGameAssets;
-    IGame& mGameCallbacks;
+    IGame& mGameCallbacks;    
+    Player* mPlayer;
+
+    // Views
     sf::View& mGameView;
     sf::View& mHudView;
-    GameObjectManager& mGameObjectManager;
-    Player* mPlayer;
+
+    // Groups
+    std::unordered_map<uint32_t, Group> mDrawGroups;
     Group mAllSprites;
 };

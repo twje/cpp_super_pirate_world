@@ -17,3 +17,7 @@ constexpr uint32_t WINDOW_HEIGHT = 600;
 constexpr uint32_t ANIMATION_SPEED = 6;
 
 extern std::unordered_map<FontId, std::string> FONT_MAP;
+extern std::unordered_map<std::string, uint32_t> DEPTHS;
+
+//------------------------------------------------------------------------------
+const std::vector<uint32_t>& GetSortedDepths();
