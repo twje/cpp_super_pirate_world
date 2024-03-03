@@ -81,6 +81,11 @@ public:
         return sf::Vector2f(mRectangle.left + mRectangle.width / 2.0f, mRectangle.top);
     }
 
+    sf::Vector2f GetRectMidLeft()
+    {
+        return sf::Vector2f(mRectangle.left, mRectangle.top + mRectangle.height / 2.0f);
+    }
+
 private:
     sf::FloatRect mRectangle;
 };

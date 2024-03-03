@@ -15,6 +15,7 @@
 #include "Core/StringUtils.h"
 #include "Core/RandomUtils.h"
 #include "Core/Animate.h"
+#include "Core/RectUtils.h"
 
 // System
 #include <cmath> 
@@ -156,6 +157,28 @@ private:
 };
 
 //------------------------------------------------------------------------------
+class Shell : public AnimatedSprite
+{
+public:
+    Shell(const sf::Vector2f& position, const sf::Vector2f& scale, TextureMap& animFrames, uint32_t animSpeed)
+        : AnimatedSprite(position, scale, animFrames.at("idle"), animSpeed)
+        , mState("idle")
+    { }
+
+public:
+    std::string mState;
+};
+
+//------------------------------------------------------------------------------
+class Tooth : public AnimatedSprite
+{
+public:
+    Tooth(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+        : AnimatedSprite(position, scale, animFrames, animSpeed)
+    { }
+};
+
+//------------------------------------------------------------------------------
 class Item : public AnimatedSprite
 {
 public:
@@ -169,6 +192,37 @@ public:
     {
         SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
     }
+};
+
+//------------------------------------------------------------------------------
+class MovingSprite : public AnimatedSprite
+{
+public:
+    MovingSprite(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
+                 const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+        : AnimatedSprite(startPos, scale, animFrames, animSpeed)
+        , mIsVertMovement(isVertMovement)
+    { 
+        UpdateOrigin(*animFrames[0]);
+    }
+
+    virtual void Update(const sf::Time& timeslice)
+    {
+        // implement
+    }
+
+    virtual void OnAnimationUpdate(const sf::Texture& texture) override
+    {
+        UpdateOrigin(texture);
+    }
+
+private:
+    void UpdateOrigin(const sf::Texture& texture)
+    {
+        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
+    }
+
+    bool mIsVertMovement;
 };
 
 //------------------------------------------------------------------------------
@@ -325,13 +379,80 @@ private:
             else
             {
 
+                bool mIsVertMovement = false;
+                sf::Vector2f startPos(object.GetPosition().x, object.GetPosition().y);
+                sf::Vector2f endPos(object.GetPosition().x + object.GetSize().x, object.GetPosition().y);
+                
+                if (object.GetSize().y > object.GetSize().x)  
+                {
+                    mIsVertMovement = true;
+                    startPos = sf::Vector2f(object.GetPosition().x, object.GetPosition().y);
+                    endPos = sf::Vector2f(object.GetPosition().x, object.GetPosition().y + object.GetSize().y);
+                }
+
+                int32_t speed = object.GetPropertyValue<int32_t>("speed");
+                GameObject* sprite = CreateMovementSpriteObject(startPos,
+                                                                endPos,
+                                                                mIsVertMovement,
+                                                                speed,
+                                                                object.GetScale(),
+                                                                mGameAssets.GetTextureVec(object.GetName()),
+                                                                ANIMATION_SPEED);
+                mAllSprites.AddGameObject(sprite);
+
+                if (object.GetName() == "saw")
+                {
+                    const sf::Texture& texture = mGameAssets.GetTexture("saw_chain");
+                    if (mIsVertMovement)
+                    {                        
+                        float x = startPos.x - texture.getSize().x / 2.0f;
+                        for (float y = startPos.y; y < endPos.y; y += 20.0f)
+                        {
+                            GameObject* sprite = AddSpriteObject(texture, { x, y });
+                            mAllSprites.AddGameObject(sprite);
+                        }
+                    }
+                    else
+                    {
+                        float y = startPos.y - texture.getSize().y / 2.0f;
+                        for (float x = startPos.x; x < endPos.x; x += 20.0f)
+                        {
+                            GameObject* sprite = AddSpriteObject(texture, { x, y });
+                            mAllSprites.AddGameObject(sprite);
+                        }
+                    }
+                }
             }
         }
-    }        
+    }
+
+    GameObject* CreateMovementSpriteObject(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
+                                           const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    {
+        return mGameObjectManager.CreateGameObject<MovingSprite>(startPos, endPos, isVertMovement, speed, scale, animFrames, animSpeed);
+    }
 
     void SetupEnemies()
     {
-
+        for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Enemies"))
+        {
+            if (object.GetName() == "tooth")
+            {
+                GameObject* sprite = AddToothObject(object.GetPosition(),
+                                                    object.GetScale(),
+                                                    mGameAssets.GetTextureVec(object.GetName()),
+                                                    ANIMATION_SPEED);
+                mAllSprites.AddGameObject(sprite);
+            }
+            else if (object.GetName() == "shell")
+            {
+                GameObject* sprite = AddShellObject(object.GetPosition(),
+                                                    object.GetScale(),
+                                                    mGameAssets.GetTextureDirMap(object.GetName()),
+                                                    ANIMATION_SPEED);
+                mAllSprites.AddGameObject(sprite);
+            }
+        }
     }
 
     void SetupItems()
@@ -401,6 +522,22 @@ private:
                                                                    scale,
                                                                    animFrames,
                                                                    animSpeed);
+    }
+    
+    GameObject* AddToothObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    {
+        return mGameObjectManager.CreateGameObject<Tooth>(position,
+                                                          scale,
+                                                          animFrames,
+                                                          animSpeed);
+    }
+    
+    GameObject* AddShellObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureMap& animFrames, uint32_t animSpeed)
+    {
+        return mGameObjectManager.CreateGameObject<Shell>(position,
+                                                          scale,
+                                                          animFrames,
+                                                          animSpeed);
     }
 
     void DrawGame(sf::RenderWindow& window)
