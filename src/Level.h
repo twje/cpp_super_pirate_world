@@ -81,15 +81,16 @@ private:
 #pragma region SetupObjects
     void SetupBackgroundDetails()
     {
-
-
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("BG details"))
         {
             // Static
             if (object.GetName() == "static")
             {
-                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition());
+                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), 
+                                                     object.GetPosition(), 
+                                                     DEPTHS.at("bg tiles"));
                 mAllSprites.AddGameObject(sprite);
+                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
             }
             // Animated
             else
@@ -98,8 +99,10 @@ private:
                 GameObject* sprite = AddAnimationObject(object.GetPosition(),
                                                         object.GetScale(),
                                                         mGameAssets.GetTextureVec(id), 
-                                                        ANIMATION_SPEED);
+                                                        ANIMATION_SPEED,
+                                                        DEPTHS.at("bg tiles"));
                 mAllSprites.AddGameObject(sprite);
+                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
             }
         }
     }
@@ -112,35 +115,46 @@ private:
             {
                 GameObjectManager& gameObjectManager = GameObjectManager::Instance();
                 mPlayer = gameObjectManager.CreateGameObject<Player>(sf::Vector2f());
-                mAllSprites.AddGameObject(mPlayer);
+                mAllSprites.AddGameObject(mPlayer);                
+                mDrawGroups[mPlayer->GetDepth()].AddGameObject(mPlayer);
             }
             // Static
             else if (object.GetName() == "barrel" || object.GetName() == "crate")
             {
-                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition());
+                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition(), DEPTHS.at("main"));
                 mAllSprites.AddGameObject(sprite);
+                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
             }
             // Animated
             else
             {
+                uint32_t depth = IsSubString(object.GetName(), "bg") ? DEPTHS.at("bg details") : DEPTHS.at("main");
+                
                 if (IsSubString(object.GetName(), "palm"))
                 {
-                    uint32_t animSpeed = ANIMATION_SPEED + RandomInteger(-1, 1);
                     GameObject* sprite = AddAnimationObject(object.GetPosition(),
                                                             object.GetScale(),
-                                                            mGameAssets.GetTextureDirMap("palms").at(object.GetName()), 
-                                                            animSpeed);
+                                                            mGameAssets.GetTextureDirMap("palms").at(object.GetName()),
+                                                            ANIMATION_SPEED + RandomInteger(-1, 1),
+                                                            depth);
                     mAllSprites.AddGameObject(sprite);
+                    mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                 }
                 else
-                {                   
-                        GameObject* sprite = AddAnimationObject(object.GetPosition(),
-                                                                object.GetScale(),
-                                                                mGameAssets.GetTextureVec(object.GetName()),
-                                                                ANIMATION_SPEED);
-                        mAllSprites.AddGameObject(sprite);
-                
+                {
+                    GameObject* sprite = AddAnimationObject(object.GetPosition(),
+                                                            object.GetScale(),
+                                                            mGameAssets.GetTextureVec(object.GetName()),
+                                                            ANIMATION_SPEED,
+                                                            depth);
+                    mAllSprites.AddGameObject(sprite);
+                    mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                 }
+            }
+        
+            if (object.GetName() == "flag")
+            {
+                // implement
             }
         }
     }
@@ -161,8 +175,10 @@ private:
                                                     radius,
                                                     speed,
                                                     startAngle,
-                                                    endAngle);
+                                                    endAngle,
+                                                    DEPTHS.at("main"));
                 mAllSprites.AddGameObject(sprite);
+                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                 
                 for (int32_t newRadius = 0; newRadius < radius; newRadius += 20)
                 {
@@ -171,8 +187,10 @@ private:
                                                         newRadius,
                                                         speed,
                                                         startAngle,
-                                                        endAngle);
+                                                        endAngle,
+                                                        DEPTHS.at("bg details"));
                     mAllSprites.AddGameObject(sprite);
+                    mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                 }
             }
             else
@@ -198,6 +216,7 @@ private:
                                                              mGameAssets.GetTextureVec(object.GetName()),
                                                              ANIMATION_SPEED);
                 mAllSprites.AddGameObject(sprite);
+                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
 
                 if (object.GetName() == "saw")
                 {
@@ -207,8 +226,9 @@ private:
                         float x = startPos.x - texture.getSize().x / 2.0f;
                         for (float y = startPos.y; y < endPos.y; y += 20.0f)
                         {
-                            GameObject* sprite = AddSpriteObject(texture, { x, y });
+                            GameObject* sprite = AddSpriteObject(texture, { x, y }, DEPTHS.at("bg details"));
                             mAllSprites.AddGameObject(sprite);
+                            mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                         }
                     }
                     else
@@ -216,8 +236,9 @@ private:
                         float y = startPos.y - texture.getSize().y / 2.0f;
                         for (float x = startPos.x; x < endPos.x; x += 20.0f)
                         {
-                            GameObject* sprite = AddSpriteObject(texture, { x, y });
+                            GameObject* sprite = AddSpriteObject(texture, { x, y }, DEPTHS.at("bg details"));
                             mAllSprites.AddGameObject(sprite);
+                            mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                         }
                     }
                 }
@@ -236,6 +257,7 @@ private:
                                                     mGameAssets.GetTextureVec(object.GetName()),
                                                     ANIMATION_SPEED);
                 mAllSprites.AddGameObject(sprite);
+                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
             }
             else if (object.GetName() == "shell")
             {
@@ -244,6 +266,7 @@ private:
                                                     mGameAssets.GetTextureDirMap(object.GetName()),
                                                     ANIMATION_SPEED);
                 mAllSprites.AddGameObject(sprite);
+                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
             }
         }
     }
@@ -257,6 +280,7 @@ private:
                                                mGameAssets.GetTextureDirMap("items").at(object.GetName()),
                                                ANIMATION_SPEED);
             mAllSprites.AddGameObject(sprite);
+            mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
         }
     }
 
@@ -280,13 +304,16 @@ private:
                         GameObject* sprite = AddAnimationObject({ x, y },
                                                                 object.GetScale(),
                                                                 mGameAssets.GetTextureVec("water_top"),
-                                                                ANIMATION_SPEED);
+                                                                ANIMATION_SPEED,
+                                                                DEPTHS.at("water"));
                         mAllSprites.AddGameObject(sprite);
+                        mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                     }
                     else
                     {
-                        GameObject* sprite = AddSpriteObject(mGameAssets.GetTexture("water_body"), { x, y });
+                        GameObject* sprite = AddSpriteObject(mGameAssets.GetTexture("water_body"), { x, y }, DEPTHS.at("water"));
                         mAllSprites.AddGameObject(sprite);
+                        mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
                     }
                 }
             }
@@ -303,31 +330,35 @@ private:
     }
 
     GameObject* AddSpikeObject(const sf::Texture& texture, const sf::Vector2f& position, int32_t radius, int32_t speed, 
-                               int32_t startAngle, int32_t endAngle)
+                               int32_t startAngle, int32_t endAngle, uint32_t depth)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
-        return gameObjectManager.CreateGameObject<Spike>(texture, position, radius, speed, startAngle, endAngle);
+        return gameObjectManager.CreateGameObject<Spike>(texture, position, radius, speed, startAngle, endAngle, depth);
     }
 
     GameObject* AddItemObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
     { 
+        // progress
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         return gameObjectManager.CreateGameObject<Item>(position, scale, animFrames, animSpeed);
     }
 
-    GameObject* AddSpriteObject(const sf::Texture& texture, const sf::Vector2f& position)
+    GameObject* AddSpriteObject(const sf::Texture& texture, const sf::Vector2f& position, uint32_t depth)
     {
+        // check
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
-        return gameObjectManager.CreateGameObject<Sprite>(texture, position);
+        return gameObjectManager.CreateGameObject<Sprite>(texture, position, depth);     
     }
 
-    GameObject* AddAnimationObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    GameObject* AddAnimationObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, 
+                                   uint32_t depth)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         return gameObjectManager.CreateGameObject<AnimatedSprite>(position,
                                                                   scale,
                                                                   animFrames,
-                                                                  animSpeed);
+                                                                  animSpeed,
+                                                                  depth);
     }
     
     GameObject* AddToothObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)

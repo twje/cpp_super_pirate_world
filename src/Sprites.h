@@ -11,8 +11,9 @@
 class Sprite : public GameObject
 {
 public:
-    Sprite(const sf::Texture& texture, const sf::Vector2f& position)
+    Sprite(const sf::Texture& texture, const sf::Vector2f& position, uint32_t depth)
         : mSprite(texture)
+        , mDepth(depth)
     {
         mSprite.setPosition(position);
     }
@@ -21,6 +22,8 @@ public:
     {
         return GetTransform().transformRect(mSprite.getLocalBounds());
     }
+
+    virtual uint32_t GetDepth() const override { return mDepth; }
 
     virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
     {
@@ -31,6 +34,7 @@ public:
 
 private:
     sf::Sprite mSprite;
+    uint32_t mDepth;
 };
 
 //------------------------------------------------------------------------------
@@ -38,7 +42,7 @@ class Spike : public GameObject
 {
 public:
     Spike(const sf::Texture& texture, const sf::Vector2f& position, int32_t radius, uint32_t speed,
-        int32_t startAngle, int32_t endAngle)
+          int32_t startAngle, int32_t endAngle, uint32_t depth)
         : mSprite(texture)
         , mCenter(position)
         , mRadius(radius)
@@ -48,10 +52,13 @@ public:
         , mEndAngle(endAngle)
         , mDirection(1.0f)
         , mIsFullCircle(endAngle == -1.0f)
+        , mDepth(depth)
     {
         SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
         UpdatePosition();
     }
+
+    virtual uint32_t GetDepth() const override { return mDepth; }
 
     virtual FloatRect GetGlobalBounds() const
     {
@@ -95,15 +102,18 @@ private:
     float mStartAngle;
     float mEndAngle;
     bool mIsFullCircle;
+    uint32_t mDepth;
 };
 
 //------------------------------------------------------------------------------
 class AnimatedSprite : public GameObject
 {
 public:
-    AnimatedSprite(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    AnimatedSprite(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames,
+                   uint32_t animSpeed, uint32_t depth)
         : mAnimation(animSpeed)
         , mSprite(*animFrames[0])
+        , mDepth(depth)
     {
         SetScale(scale);
         SetPosition(position);
@@ -116,6 +126,8 @@ public:
         mAnimation.AddSequence({ "current", std::move(animFramesCopy) });
         mAnimation.SetSequence("current");
     }
+
+    virtual uint32_t GetDepth() const override { return mDepth; }
 
     virtual FloatRect GetGlobalBounds() const
     {
@@ -141,6 +153,7 @@ public:
 private:
     Animation mAnimation;
     sf::Sprite mSprite;
+    uint32_t mDepth;
 };
 
 //------------------------------------------------------------------------------
@@ -148,7 +161,7 @@ class Shell : public AnimatedSprite
 {
 public:
     Shell(const sf::Vector2f& position, const sf::Vector2f& scale, TextureMap& animFrames, uint32_t animSpeed)
-        : AnimatedSprite(position, scale, animFrames.at("idle"), animSpeed)
+        : AnimatedSprite(position, scale, animFrames.at("idle"), animSpeed, DEPTHS.at("main"))
         , mState("idle")
     { }
 
@@ -161,7 +174,7 @@ class Tooth : public AnimatedSprite
 {
 public:
     Tooth(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
-        : AnimatedSprite(position, scale, animFrames, animSpeed)
+        : AnimatedSprite(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
     { }
 };
 
@@ -170,7 +183,7 @@ class Item : public AnimatedSprite
 {
 public:
     Item(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
-        : AnimatedSprite(position, scale, animFrames, animSpeed)
+        : AnimatedSprite(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
     {
         SetOrigin(sf::Vector2f(animFrames[0]->getSize()) * 0.5f);
     }
@@ -187,7 +200,7 @@ class MovingSprite : public AnimatedSprite
 public:
     MovingSprite(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
         const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
-        : AnimatedSprite(startPos, scale, animFrames, animSpeed)
+        : AnimatedSprite(startPos, scale, animFrames, animSpeed, DEPTHS.at("main"))
         , mIsVertMovement(isVertMovement)
     {
         UpdateOrigin(*animFrames[0]);

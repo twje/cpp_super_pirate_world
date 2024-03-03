@@ -26,6 +26,8 @@ public:
         mPlaceholderSprite.setFillColor(sf::Color::Red);
     }
 
+    virtual uint32_t GetDepth() const override { return DEPTHS.at("player"); }
+
     virtual FloatRect GetGlobalBounds() const
     {
         return GetTransform().transformRect(mPlaceholderSprite.getLocalBounds());
