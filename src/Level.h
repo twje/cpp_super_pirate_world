@@ -89,8 +89,6 @@ private:
                 GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), 
                                                      object.GetPosition(), 
                                                      DEPTHS.at("bg tiles"));
-                mAllSprites.AddGameObject(sprite);
-                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
             }
             // Animated
             else
@@ -101,8 +99,6 @@ private:
                                                         mGameAssets.GetTextureVec(id), 
                                                         ANIMATION_SPEED,
                                                         DEPTHS.at("bg tiles"));
-                mAllSprites.AddGameObject(sprite);
-                mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
             }
         }
     }
@@ -122,6 +118,7 @@ private:
             else if (object.GetName() == "barrel" || object.GetName() == "crate")
             {
                 GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition(), DEPTHS.at("main"));
+                mCollisionSprites.AddGameObject(sprite);
             }
             // Animated
             else
@@ -135,6 +132,11 @@ private:
                                                             mGameAssets.GetTextureDirMap("palms").at(object.GetName()),
                                                             ANIMATION_SPEED + RandomInteger(-1, 1),
                                                             depth);
+                    
+                    if (object.GetName() == "palm_small" || object.GetName() == "palm_large")
+                    {
+                        mSemiCollisionSprites.AddGameObject(sprite);
+                    }
                 }
                 else
                 {
@@ -143,6 +145,11 @@ private:
                                                             mGameAssets.GetTextureVec(object.GetName()),
                                                             ANIMATION_SPEED,
                                                             depth);
+
+                    if (object.GetName() == "saw" || object.GetName() == "floor_spike")
+                    {
+                        mDemageSprites.AddGameObject(sprite);
+                    }
                 }
             }
         
@@ -171,6 +178,7 @@ private:
                                                     startAngle,
                                                     endAngle,
                                                     DEPTHS.at("main"));
+                mDemageSprites.AddGameObject(sprite);
                 
                 for (float newRadius = 0.0f; newRadius < radius; newRadius += 20.0f)
                 {
@@ -185,7 +193,6 @@ private:
             }
             else
             {
-
                 bool mIsVertMovement = false;
                 sf::Vector2f startPos(object.GetPosition().x, object.GetPosition().y);
                 sf::Vector2f endPos(object.GetPosition().x + object.GetSize().x, object.GetPosition().y);
@@ -205,6 +212,16 @@ private:
                                                              object.GetScale(),
                                                              mGameAssets.GetTextureVec(object.GetName()),
                                                              ANIMATION_SPEED);
+
+                bool isPlatform = object.GetPropertyValue<bool>("platform");                
+                if (isPlatform)
+                {
+                    mSemiCollisionSprites.AddGameObject(sprite);
+                }
+                else
+                {
+                    mDemageSprites.AddGameObject(sprite);
+                }
 
                 if (object.GetName() == "saw")
                 {
@@ -240,6 +257,8 @@ private:
                                                     object.GetScale(),
                                                     mGameAssets.GetTextureVec(object.GetName()),
                                                     ANIMATION_SPEED);
+                mDemageSprites.AddGameObject(sprite);
+                mToothSprites.AddGameObject(sprite);
             }
             else if (object.GetName() == "shell")
             {
@@ -247,6 +266,7 @@ private:
                                                     object.GetScale(),
                                                     mGameAssets.GetTextureDirMap(object.GetName()),
                                                     ANIMATION_SPEED);
+                mCollisionSprites.AddGameObject(sprite);
             }
         }
     }
@@ -259,6 +279,7 @@ private:
                                                object.GetScale(),
                                                mGameAssets.GetTextureDirMap("items").at(object.GetName()),
                                                ANIMATION_SPEED);
+            mItemSprites.AddGameObject(sprite);
         }
     }
 
@@ -427,4 +448,11 @@ private:
     // Groups
     std::unordered_map<uint32_t, Group> mDrawGroups;
     Group mAllSprites;
+    Group mCollisionSprites;
+    Group mSemiCollisionSprites;
+    Group mDemageSprites;
+    Group mToothSprites;
+    Group mPearlSprites;
+    Group mItemSprites;
+
 };
