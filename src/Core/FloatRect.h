@@ -37,7 +37,7 @@ public:
     float GetCenterY() const { return mRectangle.top + mRectangle.height / 2.0f; }
     float GetCenterX() const { return mRectangle.left + mRectangle.width / 2.0f; }
     sf::Vector2f GetCenter() const { return { GetCenterX(), GetCenterY() }; }
-    sf::Vector2f GetPosition() const { return { mRectangle.left, mRectangle.left }; }
+    sf::Vector2f GetPosition() const { return { mRectangle.left, mRectangle.top }; }
 
     void SetLeft(float value) { mRectangle.left = value; }
     void SetTop(float value) { mRectangle.top = value; }

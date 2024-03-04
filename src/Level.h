@@ -40,9 +40,14 @@ public:
 
     bool HandleEvent(const sf::Event& event)
     {
-        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::D)
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::A)
         {
             mLevelMap.ToggleDrawObjectLayersEnabled();
+        }
+        
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::D)
+        {
+            mGameCallbacks.SwitchLevel();
         }
 
         return true;
@@ -211,10 +216,10 @@ private:
                                                              speed,
                                                              object.GetScale(),
                                                              mGameAssets.GetTextureVec(object.GetName()),
-                                                             ANIMATION_SPEED);
-
-                bool isPlatform = object.GetPropertyValue<bool>("platform");                
-                if (isPlatform)
+                                                             ANIMATION_SPEED,
+                                                             object.GetPropertyValue<bool>("flip"));
+                
+                if (object.GetPropertyValue<bool>("platform"))
                 {
                     mSemiCollisionSprites.AddGameObject(sprite);
                 }
@@ -318,7 +323,7 @@ private:
 
 #pragma region ObjectFactories
     GameObject* AddMovementSpriteObject(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
-        const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+                                        const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, bool isFlippable)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<MovingSprite>(startPos, 
@@ -327,7 +332,8 @@ private:
                                                                               speed, 
                                                                               scale, 
                                                                               animFrames, 
-                                                                              animSpeed);
+                                                                              animSpeed,
+                                                                              isFlippable);
         mAllSprites.AddGameObject(sprite);
         mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
 

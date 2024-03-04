@@ -1,11 +1,15 @@
 // Includes
 //------------------------------------------------------------------------------
+// Game
+#include "Settings.h"
+
 // Core
 #include "Core/GameObject.h"
 #include "Core/Animate.h"
+#include "Core/ResourceManager.h"
 
 // System
-#include <cmath> 
+#include <cmath>
 
 //------------------------------------------------------------------------------
 class Sprite : public GameObject
@@ -136,9 +140,7 @@ public:
 
     virtual void Update(const sf::Time& timeslice)
     {
-        mAnimation.Update(timeslice);
-        mSprite.setTexture(mAnimation.GetTexture(), true);
-        OnAnimationUpdate(mAnimation.GetTexture());
+        UpdateAnimation(timeslice);
     }
 
     virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
@@ -148,7 +150,31 @@ public:
         target.draw(mSprite, statesCopy);
     }
 
-    virtual void OnAnimationUpdate(const sf::Texture& texture) { }
+    void UpdateAnimation(const sf::Time& timeslice)
+    {
+        mAnimation.Update(timeslice);
+        mSprite.setTexture(mAnimation.GetTexture(), true);
+    }
+
+    void FlipHort(bool flag)
+    {   
+        // Transform is applied in local space
+        float scaleX = flag ? -1.0f : 1.0f;
+        float posX = flag ? mSprite.getLocalBounds().width : 0.0f;        
+
+        mSprite.setScale({ scaleX, mSprite.getScale().y });
+        mSprite.setPosition({ posX, mSprite.getPosition().y });
+    }
+
+    void FlipVert(bool flag)
+    {
+        // Transform is applied in local space
+        float scaleY = flag ? -1.0f : 1.0f;        
+        float posY = flag ? mSprite.getLocalBounds().height : 0.0f;
+
+        mSprite.setScale({ mSprite.getScale().x, scaleY });
+        mSprite.setPosition({ mSprite.getPosition().x, posY });
+    }
 
 private:
     Animation mAnimation;
@@ -187,11 +213,6 @@ public:
     {
         SetOrigin(sf::Vector2f(animFrames[0]->getSize()) * 0.5f);
     }
-
-    virtual void OnAnimationUpdate(const sf::Texture& texture) override
-    {
-        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
-    }
 };
 
 //------------------------------------------------------------------------------
@@ -199,21 +220,77 @@ class MovingSprite : public AnimatedSprite
 {
 public:
     MovingSprite(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
-        const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+                 const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, bool isFlippable)
         : AnimatedSprite(startPos, scale, animFrames, animSpeed, DEPTHS.at("main"))
+        , mStartPos(startPos)
+        , mEndPos(endPos)
         , mIsVertMovement(isVertMovement)
+        , mSpeed(speed)
+        , mIsFlippable(isFlippable)
+        , mIsVertReverseDir(false)
+        , mIsHortReverseDir(false)
     {
         UpdateOrigin(*animFrames[0]);
+        mDirection = isVertMovement ? sf::Vector2f(0.0f, 1.0f) : sf::Vector2f(1.0f, 0.0f);                                         
+        mHitbox = GetGlobalBounds();
+        mPreviousHitbox = mHitbox;
+    }
+
+    virtual FloatRect GetHitbox() const override
+    {
+        return mHitbox;
+    }
+
+    virtual FloatRect GetPreviousHitbox() const override
+    {
+        return mPreviousHitbox;
     }
 
     virtual void Update(const sf::Time& timeslice)
     {
-        // implement
-    }
+        mPreviousHitbox = mHitbox;
+        sf::Vector2f newPosition = mHitbox.GetPosition() + mDirection * mSpeed * timeslice.asSeconds();
+        mHitbox.SetPosition(newPosition);
 
-    virtual void OnAnimationUpdate(const sf::Texture& texture) override
-    {
-        UpdateOrigin(texture);
+        if (mIsVertMovement)
+        {
+            if (mHitbox.GetBottom() >= mEndPos.y && mDirection.y == 1.0f)
+            {
+                mDirection.y = -1.0f;
+                mHitbox.SetBottom(mEndPos.y);
+            }
+            if (mHitbox.GetTop() <= mStartPos.y && mDirection.y == -1.0f)
+            {
+                mDirection.y = 1.0f;
+                mHitbox.SetTop(mStartPos.y);
+            }
+            mIsVertReverseDir = mDirection.y > 0.0f;
+        }
+        else
+        {
+            if (mHitbox.GetRight() >= mEndPos.x && mDirection.x == 1.0f)
+            {
+                mDirection.x = -1.0f;
+                mHitbox.SetRight(mEndPos.x);
+            }
+            if (mHitbox.GetLeft() <= mStartPos.x && mDirection.x == -1.0f)
+            {
+                mDirection.x = 1.0f;
+                mHitbox.SetLeft(mStartPos.x);
+            }
+            mIsHortReverseDir = mDirection.x < 0.0f;
+        }
+
+        sf::Vector2f center = mHitbox.GetCenter();
+        SetPosition({ std::round(center.x), std::round(center.y) });
+        
+        UpdateAnimation(timeslice);
+
+        if (mIsFlippable)
+        {
+            FlipHort(mIsHortReverseDir);
+            FlipVert(mIsVertReverseDir);
+        }
     }
 
 private:
@@ -222,5 +299,14 @@ private:
         SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
     }
 
+    sf::Vector2f mStartPos;
+    sf::Vector2f mEndPos;
     bool mIsVertMovement;
+    float mSpeed;
+    bool mIsFlippable;
+    bool mIsVertReverseDir;
+    bool mIsHortReverseDir;
+    sf::Vector2f mDirection;
+    FloatRect mHitbox;
+    FloatRect mPreviousHitbox;
 };

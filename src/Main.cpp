@@ -74,8 +74,10 @@ public:
 
 private:
     virtual void SwitchLevel() override
-    {
-        throw NotImplementedException();
+    {        
+        mCurrentLevelIndex = (mCurrentLevelIndex + 1) % mLevelMaps.size();
+        Level* level = new Level(mLevelMaps.at(mCurrentLevelIndex), mGameData, mGameAssets, *this, mGameView, mHudView);
+        mCurrentLevel.reset(level);
     }
 
     Group mAllSprites;
@@ -86,6 +88,7 @@ private:
     GameData mGameData;
     GameAssets mGameAssets;
     std::unique_ptr<Level> mCurrentLevel;
+    uint32_t mCurrentLevelIndex = 0;
 };
 
 //------------------------------------------------------------------------------
