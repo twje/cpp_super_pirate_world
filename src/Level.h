@@ -159,10 +159,10 @@ private:
         {
             if (object.GetName() == "spike")
             {
-                int32_t radius = object.GetPropertyValue<int32_t>("radius");
-                int32_t speed = object.GetPropertyValue<int32_t>("speed");
-                int32_t startAngle = object.GetPropertyValue<int32_t>("start_angle");
-                int32_t endAngle = object.GetPropertyValue<int32_t>("end_angle");
+                float radius = static_cast<float>(object.GetPropertyValue<int32_t>("radius"));
+                float speed = static_cast<float>(object.GetPropertyValue<int32_t>("speed"));
+                float startAngle = static_cast<float>(object.GetPropertyValue<int32_t>("start_angle"));
+                float endAngle = static_cast<float>(object.GetPropertyValue<int32_t>("end_angle"));
                 
                 GameObject* sprite = AddSpikeObject(mGameAssets.GetTexture("spike"),
                                                     object.GetPosition(),
@@ -172,7 +172,7 @@ private:
                                                     endAngle,
                                                     DEPTHS.at("main"));
                 
-                for (int32_t newRadius = 0; newRadius < radius; newRadius += 20)
+                for (float newRadius = 0.0f; newRadius < radius; newRadius += 20.0f)
                 {
                     GameObject* sprite = AddSpikeObject(mGameAssets.GetTexture("spike_chain"),
                                                         object.GetPosition(),
@@ -313,8 +313,8 @@ private:
         return sprite;
     }
 
-    GameObject* AddSpikeObject(const sf::Texture& texture, const sf::Vector2f& position, int32_t radius, int32_t speed, 
-                               int32_t startAngle, int32_t endAngle, uint32_t depth)
+    GameObject* AddSpikeObject(const sf::Texture& texture, const sf::Vector2f& position, float radius, float speed, 
+                               float startAngle, float endAngle, uint32_t depth)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<Spike>(texture, position, radius, speed, startAngle, endAngle, depth);

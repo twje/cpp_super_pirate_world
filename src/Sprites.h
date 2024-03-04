@@ -41,8 +41,8 @@ private:
 class Spike : public GameObject
 {
 public:
-    Spike(const sf::Texture& texture, const sf::Vector2f& position, int32_t radius, uint32_t speed,
-          int32_t startAngle, int32_t endAngle, uint32_t depth)
+    Spike(const sf::Texture& texture, const sf::Vector2f& position, float radius, float speed,
+          float startAngle, float endAngle, uint32_t depth)
         : mSprite(texture)
         , mCenter(position)
         , mRadius(radius)

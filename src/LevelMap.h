@@ -34,7 +34,7 @@ public:
     {
         const std::vector<TiledMapLayer>& layers = mTiledMap->GetLayers();
         
-        for (size_t index = 0; index < layers.size(); index++)
+        for (uint32_t index = 0; index < static_cast<uint32_t>(layers.size()); index++)
         {
             if (layerName == layers.at(index).GetName())
             {
