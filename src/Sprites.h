@@ -3,11 +3,13 @@
 // Game
 #include "Settings.h"
 #include "GameData.h"
+#include "Interfaces.h"
 
 // Core
 #include "Core/GameObject.h"
 #include "Core/Animate.h"
 #include "Core/ResourceManager.h"
+#include "Core/Timer.h"
 
 // System
 #include <cmath>
@@ -20,7 +22,7 @@ public:
         : mSprite(texture)
         , mDepth(depth)
     {
-        mSprite.setPosition(position);
+        SetPosition(position);
     }
 
     virtual FloatRect GetGlobalBounds() const
@@ -37,7 +39,95 @@ public:
         target.draw(mSprite, statesCopy);
     }
 
+    void SetTexture(const sf::Texture& texture, bool resetRect)
+    {
+        mSprite.setTexture(texture, resetRect);
+    }
+
+    void FlipHort(bool flag)
+    {
+        // Transform is applied in local space
+        float scaleX = flag ? -1.0f : 1.0f;
+        float posX = flag ? mSprite.getLocalBounds().width : 0.0f;
+
+        mSprite.setScale({ scaleX, mSprite.getScale().y });
+        mSprite.setPosition({ posX, mSprite.getPosition().y });
+    }
+
 private:
+    sf::Sprite mSprite;
+    uint32_t mDepth;
+};
+
+//------------------------------------------------------------------------------
+class AnimatedSprite : public GameObject
+{
+public:
+    AnimatedSprite(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames,
+        uint32_t animSpeed, uint32_t depth)
+        : mAnimation(animSpeed)
+        , mSprite(*animFrames[0])
+        , mDepth(depth)
+    {
+        SetScale(scale);
+        SetPosition(position);
+
+        auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
+        for (auto& texturePtr : animFrames)
+        {
+            animFramesCopy->push_back(&(*texturePtr));
+        }
+        mAnimation.AddSequence({ "current", std::move(animFramesCopy) });
+        mAnimation.SetSequence("current");
+    }
+
+    virtual uint32_t GetDepth() const override { return mDepth; }
+
+    virtual FloatRect GetGlobalBounds() const
+    {
+        return GetTransform().transformRect(mSprite.getLocalBounds());
+    }
+
+    virtual void Update(const sf::Time& timeslice)
+    {
+        UpdateAnimation(timeslice);
+    }
+
+    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
+    {
+        sf::RenderStates statesCopy(states);
+        statesCopy.transform *= GetTransform();
+        target.draw(mSprite, statesCopy);
+    }
+
+    void UpdateAnimation(const sf::Time& timeslice)
+    {
+        mAnimation.Update(timeslice);
+        mSprite.setTexture(mAnimation.GetTexture(), true);
+    }
+
+    void FlipHort(bool flag)
+    {
+        // Transform is applied in local space
+        float scaleX = flag ? -1.0f : 1.0f;
+        float posX = flag ? mSprite.getLocalBounds().width : 0.0f;
+
+        mSprite.setScale({ scaleX, mSprite.getScale().y });
+        mSprite.setPosition({ posX, mSprite.getPosition().y });
+    }
+
+    void FlipVert(bool flag)
+    {
+        // Transform is applied in local space
+        float scaleY = flag ? -1.0f : 1.0f;
+        float posY = flag ? mSprite.getLocalBounds().height : 0.0f;
+
+        mSprite.setScale({ mSprite.getScale().x, scaleY });
+        mSprite.setPosition({ mSprite.getPosition().x, posY });
+    }
+
+private:
+    Animation mAnimation;
     sf::Sprite mSprite;
     uint32_t mDepth;
 };
@@ -111,89 +201,81 @@ private:
 };
 
 //------------------------------------------------------------------------------
-class AnimatedSprite : public GameObject
+class Shell : public Sprite
 {
 public:
-    AnimatedSprite(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames,
-                   uint32_t animSpeed, uint32_t depth)
-        : mAnimation(animSpeed)
-        , mSprite(*animFrames[0])
-        , mDepth(depth)
-    {
-        SetScale(scale);
-        SetPosition(position);
-
-        auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
-        for (auto& texturePtr : animFrames)
-        {
-            animFramesCopy->push_back(&(*texturePtr));
-        }
-        mAnimation.AddSequence({ "current", std::move(animFramesCopy) });
-        mAnimation.SetSequence("current");
-    }
-
-    virtual uint32_t GetDepth() const override { return mDepth; }
-
-    virtual FloatRect GetGlobalBounds() const
-    {
-        return GetTransform().transformRect(mSprite.getLocalBounds());
+    Shell(const sf::Vector2f& position, bool isReverse, TextureMap& animFrames, uint32_t animSpeed, ILevel& levelCallbacks)
+        : Sprite(*animFrames.at("idle")[0], position, DEPTHS.at("main"))
+        , mIsReverse(isReverse)
+        , mAnimation(animSpeed)
+        , mLevelCallbacks(levelCallbacks)
+        , mState("idle")
+        , mBulletDirection(isReverse ? -1.0f : 1.0f)
+        , mShootTimer(sf::milliseconds(3000))
+        , mHasFired(false)
+    { 
+        mShootTimer.Start();
+        InitAnimation(animFrames, mState);
     }
 
     virtual void Update(const sf::Time& timeslice)
     {
-        UpdateAnimation(timeslice);
+        mShootTimer.Update(timeslice);
+
+        bool isPlayerNear = true;
+        bool isPlayerFront = true;
+        bool isPlayerLevel = true;
+
+        if (isPlayerNear && isPlayerFront && isPlayerLevel && mShootTimer.IsFinished())
+        {
+            mState = "fire";
+            mShootTimer.Reset(true);
+        }
+
+        if (mAnimation.Update(timeslice))
+        {
+            if (mState == "fire") 
+            { 
+                mState = "idle"; 
+                mHasFired = false;
+            }
+        }
+        else if (mState == "fire" && mAnimation.GetFrameIndex() == 3 && !mHasFired)
+        {
+            mLevelCallbacks.CreatePearl();
+            mHasFired = true;
+        }
+        
+        mAnimation.SetSequence(mState);
+        SetTexture(mAnimation.GetTexture(), true);
+        if (mIsReverse)
+        {
+            FlipHort(mIsReverse);
+        }
     }
-
-    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
-    {
-        sf::RenderStates statesCopy(states);
-        statesCopy.transform *= GetTransform();
-        target.draw(mSprite, statesCopy);
-    }
-
-    void UpdateAnimation(const sf::Time& timeslice)
-    {
-        mAnimation.Update(timeslice);
-        mSprite.setTexture(mAnimation.GetTexture(), true);
-    }
-
-    void FlipHort(bool flag)
-    {   
-        // Transform is applied in local space
-        float scaleX = flag ? -1.0f : 1.0f;
-        float posX = flag ? mSprite.getLocalBounds().width : 0.0f;        
-
-        mSprite.setScale({ scaleX, mSprite.getScale().y });
-        mSprite.setPosition({ posX, mSprite.getPosition().y });
-    }
-
-    void FlipVert(bool flag)
-    {
-        // Transform is applied in local space
-        float scaleY = flag ? -1.0f : 1.0f;        
-        float posY = flag ? mSprite.getLocalBounds().height : 0.0f;
-
-        mSprite.setScale({ mSprite.getScale().x, scaleY });
-        mSprite.setPosition({ mSprite.getPosition().x, posY });
-    }
-
-private:
-    Animation mAnimation;
-    sf::Sprite mSprite;
-    uint32_t mDepth;
-};
-
-//------------------------------------------------------------------------------
-class Shell : public AnimatedSprite
-{
-public:
-    Shell(const sf::Vector2f& position, const sf::Vector2f& scale, TextureMap& animFrames, uint32_t animSpeed)
-        : AnimatedSprite(position, scale, animFrames.at("idle"), animSpeed, DEPTHS.at("main"))
-        , mState("idle")
-    { }
 
 public:
+    void InitAnimation(TextureMap& animFrames, const std::string& startSequenceId)
+    {
+        for (const auto& [sequenceId, frames] : animFrames)
+        {
+            auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
+            for (auto& texturePtr : frames)
+            {
+                animFramesCopy->push_back(&(*texturePtr));
+            }
+            mAnimation.AddSequence({ sequenceId, std::move(animFramesCopy) });
+        }
+        mAnimation.SetSequence(startSequenceId);
+    }
+
+    bool mIsReverse;
     std::string mState;
+    ILevel& mLevelCallbacks;
+    float mBulletDirection;
+    Timer mShootTimer;
+    Animation mAnimation;
+    bool mHasFired;
 };
 
 //------------------------------------------------------------------------------

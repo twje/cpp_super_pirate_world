@@ -18,7 +18,7 @@
 #include "Core/DrawUtils.h"
 
 //------------------------------------------------------------------------------
-class Level
+class Level : public ILevel
 {
 public:
     Level(LevelMap& levelMap, GameData& gameData, GameAssets& gameAssets, IGame& gameCallbacks, sf::View& gameView, sf::View& hudView)
@@ -92,19 +92,19 @@ private:
             // Static
             if (object.GetName() == "static")
             {
-                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), 
-                                                     object.GetPosition(), 
-                                                     DEPTHS.at("bg tiles"));
+                GameObject* sprite = CreateSpriteObject(mLevelMap.GetTexture(object.GetGid()), 
+                                                        object.GetPosition(), 
+                                                        DEPTHS.at("bg tiles"));
             }
             // Animated
             else
             {
                 std::string id = object.GetName() == "candle" ? "candle_light" : object.GetName();
-                GameObject* sprite = AddAnimationObject(object.GetPosition(),
-                                                        object.GetScale(),
-                                                        mGameAssets.GetTextureVec(id), 
-                                                        ANIMATION_SPEED,
-                                                        DEPTHS.at("bg tiles"));
+                GameObject* sprite = CreateAnimationObject(object.GetPosition(),
+                                                           object.GetScale(),
+                                                           mGameAssets.GetTextureVec(id), 
+                                                           ANIMATION_SPEED,
+                                                           DEPTHS.at("bg tiles"));
             }
         }
     }
@@ -123,7 +123,7 @@ private:
             // Static
             else if (object.GetName() == "barrel" || object.GetName() == "crate")
             {
-                GameObject* sprite = AddSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition(), DEPTHS.at("main"));
+                GameObject* sprite = CreateSpriteObject(mLevelMap.GetTexture(object.GetGid()), object.GetPosition(), DEPTHS.at("main"));
                 mCollisionSprites.AddGameObject(sprite);
             }
             // Animated
@@ -133,11 +133,11 @@ private:
                 
                 if (IsSubString(object.GetName(), "palm"))
                 {
-                    GameObject* sprite = AddAnimationObject(object.GetPosition(),
-                                                            object.GetScale(),
-                                                            mGameAssets.GetTextureDirMap("palms").at(object.GetName()),
-                                                            ANIMATION_SPEED + RandomInteger(-1, 1),
-                                                            depth);
+                    GameObject* sprite = CreateAnimationObject(object.GetPosition(),
+                                                               object.GetScale(),
+                                                               mGameAssets.GetTextureDirMap("palms").at(object.GetName()),
+                                                               ANIMATION_SPEED + RandomInteger(-1, 1),
+                                                               depth);
                     
                     if (object.GetName() == "palm_small" || object.GetName() == "palm_large")
                     {
@@ -146,11 +146,11 @@ private:
                 }
                 else
                 {
-                    GameObject* sprite = AddAnimationObject(object.GetPosition(),
-                                                            object.GetScale(),
-                                                            mGameAssets.GetTextureVec(object.GetName()),
-                                                            ANIMATION_SPEED,
-                                                            depth);
+                    GameObject* sprite = CreateAnimationObject(object.GetPosition(),
+                                                               object.GetScale(),
+                                                               mGameAssets.GetTextureVec(object.GetName()),
+                                                               ANIMATION_SPEED,
+                                                               depth);
 
                     if (object.GetName() == "saw" || object.GetName() == "floor_spike")
                     {
@@ -177,24 +177,24 @@ private:
                 float startAngle = static_cast<float>(object.GetPropertyValue<int32_t>("start_angle"));
                 float endAngle = static_cast<float>(object.GetPropertyValue<int32_t>("end_angle"));
                 
-                GameObject* sprite = AddSpikeObject(mGameAssets.GetTexture("spike"),
-                                                    object.GetPosition(),
-                                                    radius,
-                                                    speed,
-                                                    startAngle,
-                                                    endAngle,
-                                                    DEPTHS.at("main"));
+                GameObject* sprite = CreateSpikeObject(mGameAssets.GetTexture("spike"),
+                                                       object.GetPosition(),
+                                                       radius,
+                                                       speed,
+                                                       startAngle,
+                                                       endAngle,
+                                                       DEPTHS.at("main"));
                 mDemageSprites.AddGameObject(sprite);
                 
                 for (float newRadius = 0.0f; newRadius < radius; newRadius += 20.0f)
                 {
-                    GameObject* sprite = AddSpikeObject(mGameAssets.GetTexture("spike_chain"),
-                                                        object.GetPosition(),
-                                                        newRadius,
-                                                        speed,
-                                                        startAngle,
-                                                        endAngle,
-                                                        DEPTHS.at("bg details"));
+                    GameObject* sprite = CreateSpikeObject(mGameAssets.GetTexture("spike_chain"),
+                                                           object.GetPosition(),
+                                                           newRadius,
+                                                           speed,
+                                                           startAngle,
+                                                           endAngle,
+                                                           DEPTHS.at("bg details"));
                 }
             }
             else
@@ -211,14 +211,14 @@ private:
                 }
 
                 int32_t speed = object.GetPropertyValue<int32_t>("speed");
-                GameObject* sprite = AddMovementSpriteObject(startPos,
-                                                             endPos,
-                                                             mIsVertMovement,
-                                                             speed,
-                                                             object.GetScale(),
-                                                             mGameAssets.GetTextureVec(object.GetName()),
-                                                             ANIMATION_SPEED,
-                                                             object.GetPropertyValue<bool>("flip"));
+                GameObject* sprite = CreateMovementSpriteObject(startPos,
+                                                                endPos,
+                                                                mIsVertMovement,
+                                                                speed,
+                                                                object.GetScale(),
+                                                                mGameAssets.GetTextureVec(object.GetName()),
+                                                                ANIMATION_SPEED,
+                                                                object.GetPropertyValue<bool>("flip"));
                 
                 if (object.GetPropertyValue<bool>("platform"))
                 {
@@ -237,7 +237,7 @@ private:
                         float x = startPos.x - texture.getSize().x / 2.0f;
                         for (float y = startPos.y; y < endPos.y; y += 20.0f)
                         {
-                            GameObject* sprite = AddSpriteObject(texture, { x, y }, DEPTHS.at("bg details"));                            
+                            GameObject* sprite = CreateSpriteObject(texture, { x, y }, DEPTHS.at("bg details"));                            
                         }
                     }
                     else
@@ -245,7 +245,7 @@ private:
                         float y = startPos.y - texture.getSize().y / 2.0f;
                         for (float x = startPos.x; x < endPos.x; x += 20.0f)
                         {
-                            GameObject* sprite = AddSpriteObject(texture, { x, y }, DEPTHS.at("bg details"));
+                            GameObject* sprite = CreateSpriteObject(texture, { x, y }, DEPTHS.at("bg details"));
                         }
                     }
                 }
@@ -259,19 +259,19 @@ private:
         {
             if (object.GetName() == "tooth")
             {
-                GameObject* sprite = AddToothObject(object.GetPosition(),
-                                                    object.GetScale(),
-                                                    mGameAssets.GetTextureVec(object.GetName()),
-                                                    ANIMATION_SPEED);
+                GameObject* sprite = CreateToothObject(object.GetPosition(),
+                                                       object.GetScale(),
+                                                       mGameAssets.GetTextureVec(object.GetName()),
+                                                       ANIMATION_SPEED);
                 mDemageSprites.AddGameObject(sprite);
                 mToothSprites.AddGameObject(sprite);
             }
             else if (object.GetName() == "shell")
             {
-                GameObject* sprite = AddShellObject(object.GetPosition(),
-                                                    object.GetScale(),
-                                                    mGameAssets.GetTextureDirMap(object.GetName()),
-                                                    ANIMATION_SPEED);
+                GameObject* sprite = CreateShellObject(object.GetPosition(),
+                                                       object.GetPropertyValue<bool>("reverse"),
+                                                       mGameAssets.GetTextureDirMap(object.GetName()),
+                                                       ANIMATION_SPEED);
                 mCollisionSprites.AddGameObject(sprite);
             }
         }
@@ -281,12 +281,12 @@ private:
     {
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Items"))
         {                    
-            GameObject* sprite = AddItemObject(object.GetName(),
-                                               object.GetPosition() + mLevelMap.GetTileSize() * 0.5f,
-                                               object.GetScale(),
-                                               mGameAssets.GetTextureDirMap("items").at(object.GetName()),
-                                               ANIMATION_SPEED,
-                                               mGameData);
+            GameObject* sprite = CreateItemObject(object.GetName(),
+                                                  object.GetPosition() + mLevelMap.GetTileSize() * 0.5f,
+                                                  object.GetScale(),
+                                                  mGameAssets.GetTextureDirMap("items").at(object.GetName()),
+                                                  ANIMATION_SPEED,
+                                                  mGameData);
             mItemSprites.AddGameObject(sprite);
         }
     }
@@ -308,15 +308,15 @@ private:
                     
                     if (row == 0)
                     {
-                        GameObject* sprite = AddAnimationObject({ x, y },
-                                                                object.GetScale(),
-                                                                mGameAssets.GetTextureVec("water_top"),
-                                                                ANIMATION_SPEED,
-                                                                DEPTHS.at("water"));
+                        GameObject* sprite = CreateAnimationObject({ x, y },
+                                                                   object.GetScale(),
+                                                                   mGameAssets.GetTextureVec("water_top"),
+                                                                   ANIMATION_SPEED,
+                                                                   DEPTHS.at("water"));
                     }
                     else
                     {
-                        GameObject* sprite = AddSpriteObject(mGameAssets.GetTexture("water_body"), { x, y }, DEPTHS.at("water"));
+                        GameObject* sprite = CreateSpriteObject(mGameAssets.GetTexture("water_body"), { x, y }, DEPTHS.at("water"));
                     }
                 }
             }
@@ -325,8 +325,13 @@ private:
 #pragma endregion
 
 #pragma region ObjectFactories
-    GameObject* AddMovementSpriteObject(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
-                                        const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, bool isFlippable)
+    virtual void CreatePearl() override
+    {
+        std::cout << "create pearl" << std::endl;
+    }
+
+    GameObject* CreateMovementSpriteObject(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
+                                           const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, bool isFlippable)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<MovingSprite>(startPos, 
@@ -343,8 +348,8 @@ private:
         return sprite;
     }
 
-    GameObject* AddSpikeObject(const sf::Texture& texture, const sf::Vector2f& position, float radius, float speed, 
-                               float startAngle, float endAngle, uint32_t depth)
+    GameObject* CreateSpikeObject(const sf::Texture& texture, const sf::Vector2f& position, float radius, float speed,
+                                  float startAngle, float endAngle, uint32_t depth)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<Spike>(texture, position, radius, speed, startAngle, endAngle, depth);
@@ -354,7 +359,7 @@ private:
         return sprite;
     }
 
-    GameObject* AddItemObject(const std::string& itemType, const sf::Vector2f& position, const sf::Vector2f& scale, 
+    GameObject* CreateItemObject(const std::string& itemType, const sf::Vector2f& position, const sf::Vector2f& scale, 
                               TextureVector& animFrames, uint32_t animSpeed, GameData& data)
     { 
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
@@ -365,7 +370,7 @@ private:
         return sprite;
     }
 
-    GameObject* AddSpriteObject(const sf::Texture& texture, const sf::Vector2f& position, uint32_t depth)
+    GameObject* CreateSpriteObject(const sf::Texture& texture, const sf::Vector2f& position, uint32_t depth)
     {        
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<Sprite>(texture, position, depth);  
@@ -375,8 +380,8 @@ private:
         return sprite;
     }
 
-    GameObject* AddAnimationObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, 
-                                   uint32_t depth)
+    GameObject* CreateAnimationObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed,
+                                      uint32_t depth)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<AnimatedSprite>(position,
@@ -390,7 +395,7 @@ private:
         return sprite;
     }
     
-    GameObject* AddToothObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    GameObject* CreateToothObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<Tooth>(position,
@@ -403,13 +408,14 @@ private:
         return sprite;
     }
     
-    GameObject* AddShellObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureMap& animFrames, uint32_t animSpeed)
+    GameObject* CreateShellObject(const sf::Vector2f& position, bool isReverse, TextureMap& animFrames, uint32_t animSpeed)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
         GameObject* sprite = gameObjectManager.CreateGameObject<Shell>(position,
-                                                                       scale,
+                                                                       isReverse,
                                                                        animFrames,
-                                                                       animSpeed);
+                                                                       animSpeed,
+                                                                       *this);
         mAllSprites.AddGameObject(sprite);
         mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
 
