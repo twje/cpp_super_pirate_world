@@ -15,6 +15,7 @@
 #include "Core/GameObjectManager.h"
 #include "Core/StringUtils.h"
 #include "Core/RandomUtils.h"
+#include "Core/DrawUtils.h"
 
 //------------------------------------------------------------------------------
 class Level
@@ -280,10 +281,12 @@ private:
     {
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Items"))
         {                    
-            GameObject* sprite = AddItemObject(object.GetPosition() + mLevelMap.GetTileSize() * 0.5f,
+            GameObject* sprite = AddItemObject(object.GetName(),
+                                               object.GetPosition() + mLevelMap.GetTileSize() * 0.5f,
                                                object.GetScale(),
                                                mGameAssets.GetTextureDirMap("items").at(object.GetName()),
-                                               ANIMATION_SPEED);
+                                               ANIMATION_SPEED,
+                                               mGameData);
             mItemSprites.AddGameObject(sprite);
         }
     }
@@ -351,10 +354,11 @@ private:
         return sprite;
     }
 
-    GameObject* AddItemObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    GameObject* AddItemObject(const std::string& itemType, const sf::Vector2f& position, const sf::Vector2f& scale, 
+                              TextureVector& animFrames, uint32_t animSpeed, GameData& data)
     { 
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
-        GameObject* sprite = gameObjectManager.CreateGameObject<Item>(position, scale, animFrames, animSpeed);
+        GameObject* sprite = gameObjectManager.CreateGameObject<Item>(itemType, position, scale, animFrames, animSpeed, data);
         mAllSprites.AddGameObject(sprite);
         mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
 
@@ -425,6 +429,11 @@ private:
             {
                 window.draw(*object);
             }
+        }
+
+        for (GameObject* object : mAllSprites)
+        {
+            DrawRect<float>(window, object->GetHitbox(), sf::Color::Green);
         }
     }
 

@@ -2,6 +2,7 @@
 //------------------------------------------------------------------------------
 // Game
 #include "Settings.h"
+#include "GameData.h"
 
 // Core
 #include "Core/GameObject.h"
@@ -208,11 +209,27 @@ public:
 class Item : public AnimatedSprite
 {
 public:
-    Item(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    Item(const std::string& itemType, const sf::Vector2f& position, const sf::Vector2f& scale, 
+         TextureVector& animFrames, uint32_t animSpeed, GameData& gameData)
         : AnimatedSprite(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
+        , mItemType(itemType)
+        , mGameData(gameData)
     {
         SetOrigin(sf::Vector2f(animFrames[0]->getSize()) * 0.5f);
     }
+
+    void Activate()
+    {
+        if (mItemType == "gold") { mGameData.AddCoins(5); }
+        else if (mItemType == "silver") { mGameData.AddCoins(1); }
+        else if (mItemType == "diamond") { mGameData.AddCoins(20); }
+        else if (mItemType == "skull") { mGameData.AddCoins(50); }
+        else if (mItemType == "potion") { mGameData.AddHealth(1); }
+    }
+
+private:
+    std::string mItemType;
+    GameData& mGameData;
 };
 
 //------------------------------------------------------------------------------
