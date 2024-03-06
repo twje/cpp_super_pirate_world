@@ -34,6 +34,8 @@ public:
     GameObject* GetInstance(uint32_t entityId);
     void RemoveAllGameObjects();
 
+    size_t Count() const { return mGameObjects.size(); }
+
 private:
     GameObjectManager();
 

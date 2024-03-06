@@ -30,12 +30,6 @@ public:
         , mHudView(hudView)        
         , mPlayer(nullptr)
     {
-        mLevelMap.SetDrawObjectLayersEnabled(false);
-        mLevelMap.AddDrawabeLayer("BG", DEPTHS.at("bg tiles"));
-        mLevelMap.AddDrawabeLayer("FG", DEPTHS.at("bg tiles"));
-        mLevelMap.AddDrawabeLayer("Terrain", DEPTHS.at("main"));
-        mLevelMap.AddDrawabeLayer("Platforms", DEPTHS.at("main"));
-
         Setup();
     }
 
@@ -437,10 +431,10 @@ private:
             }
         }
 
-        for (GameObject* object : mAllSprites)
+        /*for (GameObject* object : mAllSprites)
         {
             DrawRect<float>(window, object->GetHitbox(), sf::Color::Green);
-        }
+        }*/
     }
 
     void DrawHUD(sf::RenderWindow& window)
@@ -475,5 +469,4 @@ private:
     Group mToothSprites;
     Group mPearlSprites;
     Group mItemSprites;
-
 };

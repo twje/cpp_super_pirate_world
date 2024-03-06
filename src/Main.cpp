@@ -63,7 +63,6 @@ public:
     virtual bool Draw(sf::RenderWindow& window) override
     {
         return mCurrentLevel->Draw(window);
-        //mLevelMaps.at(0).Draw(window);
         return true;
     }
 
@@ -75,6 +74,7 @@ public:
 private:
     virtual void SwitchLevel() override
     {        
+        GameObjectManager::Instance().RemoveAllGameObjects();
         mCurrentLevelIndex = (mCurrentLevelIndex + 1) % mLevelMaps.size();
         Level* level = new Level(mLevelMaps.at(mCurrentLevelIndex), mGameData, mGameAssets, *this, mGameView, mHudView);
         mCurrentLevel.reset(level);
@@ -95,28 +95,30 @@ private:
 int main()
 {    
     sf::RenderWindow window(sf::VideoMode(sf::Vector2u(WINDOW_WIDTH, WINDOW_HEIGHT)), "SFML Template Project");
-    window.setVerticalSyncEnabled(true);
-
-    sf::Clock clock;
-    const sf::Time timePerFrame = sf::seconds(1.0f / 60.0f);
-    sf::Time timeSinceLastUpdate = sf::Time::Zero;
+    window.setVerticalSyncEnabled(true);    
 
     LayerStack layerStack;
     layerStack.PushLayer(std::make_unique<Game>(layerStack, window.getSize()));    
     Game* game = static_cast<Game*>(layerStack.GetTopLayer());
     
+    sf::Clock clock;
+    sf::Time previousTime = sf::Time::Zero;
+    sf::Time currentTime;
+    const sf::Time timePerFrame = sf::seconds(1.0f / 60.0f);
+
     while (window.isOpen())
-    {
-        timeSinceLastUpdate += clock.restart();
-        while (timeSinceLastUpdate >= timePerFrame)
+    {    
+        currentTime = clock.getElapsedTime();
+        while (currentTime - previousTime >= timePerFrame)
         {
-            timeSinceLastUpdate -= timePerFrame;
             layerStack.Update(timePerFrame);
             GameObjectManager::Instance().SyncGameObjectChanges();
 
             window.clear();
             layerStack.Draw(window);
             window.display();
+         
+            previousTime += timePerFrame;
         }
 
         sf::Event event;
@@ -125,7 +127,7 @@ int main()
             if (event.type == sf::Event::Closed)
             {
                 game->UnloadGlobalAssets();
-                window.close();                
+                window.close();
             }
             else
             {

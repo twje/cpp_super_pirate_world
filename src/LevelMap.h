@@ -2,6 +2,9 @@
 
 // Includes
 //------------------------------------------------------------------------------
+// Game
+#include "Settings.h"
+
 // Core
 #include "Core/TiledMap.h"
 
@@ -14,6 +17,12 @@ public:
     {
         mTiledMap = std::make_unique<TiledMap>(mapFilepath);
         mTiledMapRenderer = std::make_unique<TiledMapRenderer>(*mTiledMap);
+
+        SetDrawObjectLayersEnabled(false);
+        AddDrawabeLayer("BG", DEPTHS.at("bg tiles"));
+        AddDrawabeLayer("FG", DEPTHS.at("bg tiles"));
+        AddDrawabeLayer("Terrain", DEPTHS.at("main"));
+        AddDrawabeLayer("Platforms", DEPTHS.at("main"));
     }
 
     const std::vector<TiledMapObject>& GetObjectsByLayerName(std::string layerName) const
