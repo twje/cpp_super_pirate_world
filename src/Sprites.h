@@ -76,18 +76,13 @@ public:
     AnimatedSprite(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames,
                    uint32_t animSpeed, uint32_t depth)
         : Sprite(*animFrames[0], position, depth)
-        , mAnimation(animSpeed)                
+        , mAnimation(animSpeed)
     {
         SetScale(scale);
     }
 
-    virtual void Update(const sf::Time& timeslice)
-    {
-        UpdateAnimation(timeslice);
-    }
-
     bool UpdateAnimation(const sf::Time& timeslice)
-    {
+    {        
         bool isRestarted = mAnimation.Update(timeslice);
         SetTexture(mAnimation.GetTexture(), true);
         return isRestarted;
@@ -116,11 +111,29 @@ private:
 };
 
 //------------------------------------------------------------------------------
+class AnimatedSpriteImpl : public AnimatedSprite
+{
+public:
+    AnimatedSpriteImpl(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames,
+                       uint32_t animSpeed, uint32_t depth)
+        : AnimatedSprite(position, scale, animFrames, animSpeed, depth)
+    {
+        AddAnimationSequence("current", animFrames);
+        SetAnimationSequence("current");
+    }
+
+    virtual void Update(const sf::Time & timeslice)
+    {
+        UpdateAnimation(timeslice);
+    }
+};
+
+//------------------------------------------------------------------------------
 class Spike : public GameObject
 {
 public:
     Spike(const sf::Texture& texture, const sf::Vector2f& position, float radius, float speed,
-          float startAngle, float endAngle, uint32_t depth)
+        float startAngle, float endAngle, uint32_t depth)
         : mSprite(texture)
         , mCenter(position)
         , mRadius(radius)
@@ -195,9 +208,9 @@ public:
         , mBulletDirection(isReverse ? -1.0f : 1.0f)
         , mShootTimer(sf::milliseconds(3000))
         , mHasFired(false)
-    { 
+    {
         mShootTimer.Start();
-        
+
         for (const auto& [sequenceId, frames] : animFrames)
         {
             AddAnimationSequence(sequenceId, frames);
@@ -217,13 +230,13 @@ public:
         {
             mState = "fire";
             mShootTimer.Reset(true);
-        }        
+        }
 
         if (UpdateAnimation(timeslice))
         {
-            if (mState == "fire") 
-            { 
-                mState = "idle"; 
+            if (mState == "fire")
+            {
+                mState = "idle";
                 mHasFired = false;
             }
         }
@@ -234,7 +247,7 @@ public:
         }
 
         SetAnimationSequence(mState);
-                
+
         if (mIsReverse)
         {
             FlipHort(mIsReverse);
@@ -246,35 +259,29 @@ private:
     ILevel& mLevelCallbacks;
     std::string mState;
     float mBulletDirection;
-    Timer mShootTimer;    
+    Timer mShootTimer;
     bool mHasFired;
 };
 
 //------------------------------------------------------------------------------
-class Tooth : public AnimatedSprite
+class Tooth : public AnimatedSpriteImpl
 {
 public:
     Tooth(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
-        : AnimatedSprite(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
-    { 
-        AddAnimationSequence("current", animFrames);
-        SetAnimationSequence("current");
-    }
+        : AnimatedSpriteImpl(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
+    { }
 };
 
 //------------------------------------------------------------------------------
-class Item : public AnimatedSprite
+class Item : public AnimatedSpriteImpl
 {
 public:
-    Item(const std::string& itemType, const sf::Vector2f& position, const sf::Vector2f& scale, 
-         TextureVector& animFrames, uint32_t animSpeed, GameData& gameData)
-        : AnimatedSprite(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
+    Item(const std::string& itemType, const sf::Vector2f& position, const sf::Vector2f& scale,
+        TextureVector& animFrames, uint32_t animSpeed, GameData& gameData)
+        : AnimatedSpriteImpl(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
         , mItemType(itemType)
         , mGameData(gameData)
     {
-        AddAnimationSequence("current", animFrames);
-        SetAnimationSequence("current");
-
         SetOrigin(sf::Vector2f(animFrames[0]->getSize()) * 0.5f);
     }
 
@@ -293,12 +300,12 @@ private:
 };
 
 //------------------------------------------------------------------------------
-class MovingSprite : public AnimatedSprite
+class MovingSprite : public AnimatedSpriteImpl
 {
 public:
     MovingSprite(const sf::Vector2f& startPos, const sf::Vector2f& endPos, bool isVertMovement, int32_t speed,
-                 const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, bool isFlippable)
-        : AnimatedSprite(startPos, scale, animFrames, animSpeed, DEPTHS.at("main"))
+        const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed, bool isFlippable)
+        : AnimatedSpriteImpl(startPos, scale, animFrames, animSpeed, DEPTHS.at("main"))
         , mStartPos(startPos)
         , mEndPos(endPos)
         , mIsVertMovement(isVertMovement)
@@ -307,14 +314,8 @@ public:
         , mIsVertReverseDir(false)
         , mIsHortReverseDir(false)
     {
-        AddAnimationSequence("current", animFrames);
-        SetAnimationSequence("current");
-
-        // Assume all textures in animation are the same size
-        const sf::Texture& texture = *animFrames[0];
-        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
-                
-        mDirection = isVertMovement ? sf::Vector2f(0.0f, 1.0f) : sf::Vector2f(1.0f, 0.0f);                                         
+        UpdateOrigin(*animFrames[0]);
+        mDirection = isVertMovement ? sf::Vector2f(0.0f, 1.0f) : sf::Vector2f(1.0f, 0.0f);
         mHitbox = GetGlobalBounds();
         mPreviousHitbox = mHitbox;
     }
@@ -366,7 +367,7 @@ public:
 
         sf::Vector2f center = mHitbox.GetCenter();
         SetPosition({ std::round(center.x), std::round(center.y) });
-        
+
         UpdateAnimation(timeslice);
 
         if (mIsFlippable)
@@ -377,6 +378,11 @@ public:
     }
 
 private:
+    void UpdateOrigin(const sf::Texture& texture)
+    {
+        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
+    }
+
     sf::Vector2f mStartPos;
     sf::Vector2f mEndPos;
     bool mIsVertMovement;

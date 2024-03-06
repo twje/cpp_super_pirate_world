@@ -48,6 +48,7 @@ public:
 
     bool Update(const sf::Time& timeslice)
     {
+        assert(mCurrentSequence);
         bool isFinished = false;
 
         mFrameIndex += mSpeed * timeslice.asSeconds();

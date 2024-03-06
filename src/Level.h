@@ -378,11 +378,11 @@ private:
                                       uint32_t depth)
     {
         GameObjectManager& gameObjectManager = GameObjectManager::Instance();
-        GameObject* sprite = gameObjectManager.CreateGameObject<AnimatedSprite>(position,
-                                                                                scale,
-                                                                                animFrames,
-                                                                                animSpeed,
-                                                                                depth);
+        GameObject* sprite = gameObjectManager.CreateGameObject<AnimatedSpriteImpl>(position,
+                                                                                    scale,
+                                                                                    animFrames,
+                                                                                    animSpeed,
+                                                                                    depth);
         mAllSprites.AddGameObject(sprite);
         mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
 
