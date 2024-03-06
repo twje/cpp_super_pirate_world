@@ -283,9 +283,14 @@ private:
 class Tooth : public AnimatedSpriteImpl
 {
 public:
-    Tooth(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
+    Tooth(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, 
+          uint32_t animSpeed, Group& collisionSprites)
         : AnimatedSpriteImpl(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
+        , mCollisionSprites(collisionSprites)
     { }
+
+private:
+    Group& mCollisionSprites;
 };
 
 //------------------------------------------------------------------------------

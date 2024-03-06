@@ -266,16 +266,30 @@ private:
         }
     }
 
+    template<typename T, typename... Args>
+    T* CreateGameObject(Args&&... args) 
+    {
+        return GameObjectManager::Instance().CreateGameObject<T>(std::forward<Args>(args)...);
+    }
+
+    void AddToCommonGroups(GameObject* sprite)
+    {
+        mAllSprites.AddGameObject(sprite);        
+        mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
+    }
+
     void SetupEnemies()
     {
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("Enemies"))
         {
             if (object.GetName() == "tooth")
-            {
-                GameObject* sprite = CreateToothObject(object.GetPosition(),
-                                                       object.GetScale(),
-                                                       mGameAssets.GetTextureVec(object.GetName()),
-                                                       ANIMATION_SPEED);
+            {                
+                GameObject* sprite = CreateGameObject<Tooth>(object.GetPosition(),
+                                                             object.GetScale(),
+                                                             mGameAssets.GetTextureVec(object.GetName()),
+                                                             ANIMATION_SPEED,
+                                                             mCollisionSprites);                                                                              
+                AddToCommonGroups(sprite);
                 mDemageSprites.AddGameObject(sprite);
                 mToothSprites.AddGameObject(sprite);
             }
@@ -406,20 +420,7 @@ private:
         mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
 
         return sprite;
-    }
-    
-    GameObject* CreateToothObject(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
-    {
-        GameObjectManager& gameObjectManager = GameObjectManager::Instance();
-        GameObject* sprite = gameObjectManager.CreateGameObject<Tooth>(position,
-                                                         scale,
-                                                         animFrames,
-                                                         animSpeed);
-        mAllSprites.AddGameObject(sprite);
-        mDrawGroups[sprite->GetDepth()].AddGameObject(sprite);
-
-        return sprite;
-    }
+    }   
     
     GameObject* CreateShellObject(const sf::Vector2f& position, bool isReverse, TextureMap& animFrames, uint32_t animSpeed)
     {
