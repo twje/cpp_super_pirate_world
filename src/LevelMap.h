@@ -25,6 +25,20 @@ public:
         AddDrawabeLayer("Platforms", DEPTHS.at("main"));
     }
 
+    const std::map<std::tuple<int32_t, int32_t>, TiledMapTile*>& GetTileDataByLayerName(std::string layerName) const
+    {
+        for (const TiledMapLayer& layer : mTiledMap->GetLayers())
+        {
+            if (layer.GetName() == layerName)
+            {
+                return layer.GetTileData();
+            }
+        }
+
+        static const std::map<std::tuple<int32_t, int32_t>, TiledMapTile*> emptyVector{ };
+        return emptyVector;
+    }
+
     const std::vector<TiledMapObject>& GetObjectsByLayerName(std::string layerName) const
     {
         for (const TiledMapLayer& layer : mTiledMap->GetLayers())

@@ -70,6 +70,7 @@ public:
 private:
     void Setup()
     {
+        SetupTiles();
         SetupBackgroundDetails();
         SetupObjects();
         SetupMovingObjects();
@@ -79,6 +80,24 @@ private:
     }
 
 #pragma region SetupObjects
+    void SetupTiles()
+    {        
+        sf::Vector2f tileSize = mLevelMap.GetTileSize();
+        for (const auto& [coord, tile] : mLevelMap.GetTileDataByLayerName("Terrain"))
+        {
+            int32_t coordX = std::get<0>(coord);
+            int32_t coordY = std::get<1>(coord);            
+
+            GameObjectManager& manager = GameObjectManager::Instance();
+            TileSprite* tileSprite = manager.CreateGameObject<TileSprite>(mLevelMap.GetTexture(tile->GetGid()),
+                                                                          tile->GetTextureRegion(),
+                                                                          sf::Vector2f(coordX * tileSize.x, coordY * tileSize.y),
+                                                                          0);
+            mAllSprites.AddGameObject(tileSprite);
+            mCollisionSprites.AddGameObject(tileSprite);
+        }
+    }
+
     void SetupBackgroundDetails()
     {
         for (const TiledMapObject& object : mLevelMap.GetObjectsByLayerName("BG details"))
@@ -431,10 +450,10 @@ private:
             }
         }
 
-        /*for (GameObject* object : mAllSprites)
+        for (GameObject* object : mAllSprites)
         {
             DrawRect<float>(window, object->GetHitbox(), sf::Color::Green);
-        }*/
+        }
     }
 
     void DrawHUD(sf::RenderWindow& window)

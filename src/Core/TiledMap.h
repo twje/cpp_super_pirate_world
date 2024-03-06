@@ -297,6 +297,7 @@ public:
         return nullptr;
     }
 
+    const std::map<std::tuple<int32_t, int32_t>, TiledMapTile*>& GetTileData() const { return mTileData; }
     const std::vector<TiledMapObject>& GetObjects() const { return mObjects; }
     const sf::Vector2u& GetTileCount() const { return mTileCount; }
     TiledMapLayerType GetType() const { return mType; }

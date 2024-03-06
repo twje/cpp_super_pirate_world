@@ -44,6 +44,11 @@ public:
         mSprite.setTexture(texture, resetRect);
     }
 
+    void SetTextureRegion(const sf::IntRect& region)
+    {
+        mSprite.setTextureRect(region);
+    }
+
     void FlipHort(bool flag)
     {
         // Transform is applied in local space
@@ -67,6 +72,17 @@ public:
 private:
     sf::Sprite mSprite;
     uint32_t mDepth;
+};
+
+//------------------------------------------------------------------------------
+class TileSprite : public Sprite
+{
+public:
+    TileSprite(const sf::Texture& texture, const sf::IntRect& textureRegion, const sf::Vector2f& position, uint32_t depth)
+        : Sprite(texture, position, depth)
+    {
+        SetTextureRegion(textureRegion);
+    }
 };
 
 //------------------------------------------------------------------------------
