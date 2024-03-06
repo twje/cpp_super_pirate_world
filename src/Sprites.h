@@ -81,13 +81,14 @@ public:
         SetScale(scale);
     }
 
-    void UpdateAnimation(const sf::Time& timeslice)
+    bool UpdateAnimation(const sf::Time& timeslice)
     {
-        mAnimation.Update(timeslice);
+        bool isRestarted = mAnimation.Update(timeslice);
         SetTexture(mAnimation.GetTexture(), true);
+        return isRestarted;
     }
 
-    void AddAnimationSequence(const std::string& sequenceId, TextureVector& frames)
+    void AddAnimationSequence(const std::string& sequenceId, const TextureVector& frames)
     {
         auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
         for (auto& texturePtr : frames)
@@ -100,7 +101,10 @@ public:
     void SetAnimationSequence(const std::string& sequenceId)
     {
         mAnimation.SetSequence(sequenceId);
+        SetTexture(mAnimation.GetTexture(), true);
     }
+
+    uint32_t GetAnimationFrameIndex() { return mAnimation.GetFrameIndex(); }
 
 private:
     Animation mAnimation;
@@ -175,13 +179,12 @@ private:
 };
 
 //------------------------------------------------------------------------------
-class Shell : public Sprite
+class Shell : public AnimatedSprite
 {
 public:
     Shell(const sf::Vector2f& position, bool isReverse, TextureMap& animFrames, uint32_t animSpeed, ILevel& levelCallbacks)
-        : Sprite(*animFrames.at("idle")[0], position, DEPTHS.at("main"))
+        : AnimatedSprite(position, sf::Vector2f(1.0f, 1.0f), animFrames["idle"], animSpeed, DEPTHS.at("main"))
         , mIsReverse(isReverse)
-        , mAnimation(animSpeed)
         , mLevelCallbacks(levelCallbacks)
         , mState("idle")
         , mBulletDirection(isReverse ? -1.0f : 1.0f)
@@ -189,7 +192,12 @@ public:
         , mHasFired(false)
     { 
         mShootTimer.Start();
-        InitAnimation(animFrames, mState);
+        
+        for (const auto& [sequenceId, frames] : animFrames)
+        {
+            AddAnimationSequence(sequenceId, frames);
+        }
+        SetAnimationSequence(mState);
     }
 
     virtual void Update(const sf::Time& timeslice)
@@ -204,9 +212,9 @@ public:
         {
             mState = "fire";
             mShootTimer.Reset(true);
-        }
+        }        
 
-        if (mAnimation.Update(timeslice))
+        if (UpdateAnimation(timeslice))
         {
             if (mState == "fire") 
             { 
@@ -214,41 +222,26 @@ public:
                 mHasFired = false;
             }
         }
-        else if (mState == "fire" && mAnimation.GetFrameIndex() == 3 && !mHasFired)
+        else if (mState == "fire" && GetAnimationFrameIndex() == 3 && !mHasFired)
         {
             mLevelCallbacks.CreatePearl();
             mHasFired = true;
         }
-        
-        mAnimation.SetSequence(mState);
-        SetTexture(mAnimation.GetTexture(), true);
+
+        SetAnimationSequence(mState);
+                
         if (mIsReverse)
         {
             FlipHort(mIsReverse);
         }
     }
 
-public:
-    void InitAnimation(TextureMap& animFrames, const std::string& startSequenceId)
-    {
-        for (const auto& [sequenceId, frames] : animFrames)
-        {
-            auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
-            for (auto& texturePtr : frames)
-            {
-                animFramesCopy->push_back(&(*texturePtr));
-            }
-            mAnimation.AddSequence({ sequenceId, std::move(animFramesCopy) });
-        }
-        mAnimation.SetSequence(startSequenceId);
-    }
-
+private:
     bool mIsReverse;
-    std::string mState;
     ILevel& mLevelCallbacks;
+    std::string mState;
     float mBulletDirection;
-    Timer mShootTimer;
-    Animation mAnimation;
+    Timer mShootTimer;    
     bool mHasFired;
 };
 
