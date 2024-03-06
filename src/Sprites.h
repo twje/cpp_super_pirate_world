@@ -79,26 +79,27 @@ public:
         , mAnimation(animSpeed)                
     {
         SetScale(scale);
-        SetPosition(position);
-
-        auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
-        for (auto& texturePtr : animFrames)
-        {
-            animFramesCopy->push_back(&(*texturePtr));
-        }
-        mAnimation.AddSequence({ "current", std::move(animFramesCopy) });
-        mAnimation.SetSequence("current");
-    }
-
-    virtual void Update(const sf::Time& timeslice)
-    {
-        UpdateAnimation(timeslice);
     }
 
     void UpdateAnimation(const sf::Time& timeslice)
     {
         mAnimation.Update(timeslice);
         SetTexture(mAnimation.GetTexture(), true);
+    }
+
+    void AddAnimationSequence(const std::string& sequenceId, TextureVector& frames)
+    {
+        auto animFramesCopy = std::make_unique<std::vector<sf::Texture*>>();
+        for (auto& texturePtr : frames)
+        {
+            animFramesCopy->push_back(&(*texturePtr));
+        }
+        mAnimation.AddSequence({ sequenceId, std::move(animFramesCopy) });
+    }
+
+    void SetAnimationSequence(const std::string& sequenceId)
+    {
+        mAnimation.SetSequence(sequenceId);
     }
 
 private:
@@ -270,6 +271,9 @@ public:
         , mItemType(itemType)
         , mGameData(gameData)
     {
+        AddAnimationSequence("current", animFrames);
+        SetAnimationSequence("current");
+
         SetOrigin(sf::Vector2f(animFrames[0]->getSize()) * 0.5f);
     }
 
@@ -280,6 +284,11 @@ public:
         else if (mItemType == "diamond") { mGameData.AddCoins(20); }
         else if (mItemType == "skull") { mGameData.AddCoins(50); }
         else if (mItemType == "potion") { mGameData.AddHealth(1); }
+    }
+
+    virtual void Update(const sf::Time& timeslice)
+    {
+        UpdateAnimation(timeslice);
     }
 
 private:
@@ -302,6 +311,9 @@ public:
         , mIsVertReverseDir(false)
         , mIsHortReverseDir(false)
     {
+        AddAnimationSequence("current", animFrames);
+        SetAnimationSequence("current");
+
         UpdateOrigin(*animFrames[0]);
         mDirection = isVertMovement ? sf::Vector2f(0.0f, 1.0f) : sf::Vector2f(1.0f, 0.0f);                                         
         mHitbox = GetGlobalBounds();
