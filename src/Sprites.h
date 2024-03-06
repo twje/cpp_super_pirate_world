@@ -81,6 +81,11 @@ public:
         SetScale(scale);
     }
 
+    virtual void Update(const sf::Time& timeslice)
+    {
+        UpdateAnimation(timeslice);
+    }
+
     bool UpdateAnimation(const sf::Time& timeslice)
     {
         bool isRestarted = mAnimation.Update(timeslice);
@@ -251,7 +256,10 @@ class Tooth : public AnimatedSprite
 public:
     Tooth(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames, uint32_t animSpeed)
         : AnimatedSprite(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
-    { }
+    { 
+        AddAnimationSequence("current", animFrames);
+        SetAnimationSequence("current");
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -279,11 +287,6 @@ public:
         else if (mItemType == "potion") { mGameData.AddHealth(1); }
     }
 
-    virtual void Update(const sf::Time& timeslice)
-    {
-        UpdateAnimation(timeslice);
-    }
-
 private:
     std::string mItemType;
     GameData& mGameData;
@@ -307,7 +310,10 @@ public:
         AddAnimationSequence("current", animFrames);
         SetAnimationSequence("current");
 
-        UpdateOrigin(*animFrames[0]);
+        // Assume all textures in animation are the same size
+        const sf::Texture& texture = *animFrames[0];
+        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
+                
         mDirection = isVertMovement ? sf::Vector2f(0.0f, 1.0f) : sf::Vector2f(1.0f, 0.0f);                                         
         mHitbox = GetGlobalBounds();
         mPreviousHitbox = mHitbox;
@@ -371,11 +377,6 @@ public:
     }
 
 private:
-    void UpdateOrigin(const sf::Texture& texture)
-    {
-        SetOrigin(sf::Vector2f(texture.getSize()) * 0.5f);
-    }
-
     sf::Vector2f mStartPos;
     sf::Vector2f mEndPos;
     bool mIsVertMovement;
