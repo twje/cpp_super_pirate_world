@@ -18,3 +18,6 @@ void DrawRect(sf::RenderTarget& target, const sf::Rect<T>& rect, const sf::Color
 
 	target.draw(rectangleShape);
 }
+
+//------------------------------------------------------------------------------
+void DrawCircle(sf::RenderTarget& target, const sf::Vector2f& position, float radius, const sf::Color& color);

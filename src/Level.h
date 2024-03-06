@@ -451,10 +451,10 @@ private:
             }
         }
 
-        for (GameObject* object : mAllSprites)
-        {
-            DrawRect<float>(window, object->GetHitbox(), sf::Color::Green);
-        }
+        //for (GameObject* object : mAllSprites)
+        //{
+        //    DrawRect<float>(window, object->GetHitbox(), sf::Color::Green);
+        //}
     }
 
     void DrawHUD(sf::RenderWindow& window)

@@ -16,7 +16,7 @@ public:
         : mRectangle(floatRect)
     { }
 
-    operator const sf::FloatRect& () { return mRectangle; }
+    operator const sf::FloatRect& () { return mRectangle; }    
 
     std::optional<FloatRect> FindIntersection(const FloatRect& rectangle) const
     {
@@ -26,6 +26,11 @@ public:
     std::optional<FloatRect> FindIntersection(sf::FloatRect& rectangle) const
     {
         return mRectangle.findIntersection(rectangle);
+    }
+
+    bool ContainsPoint(const sf::Vector2f& point)
+    {
+        return mRectangle.contains(point);
     }
 
     float GetLeft() const { return mRectangle.left; }
@@ -38,7 +43,10 @@ public:
     float GetCenterX() const { return mRectangle.left + mRectangle.width / 2.0f; }
     sf::Vector2f GetCenter() const { return { GetCenterX(), GetCenterY() }; }
     sf::Vector2f GetPosition() const { return { mRectangle.left, mRectangle.top }; }
+    sf::Vector2f GetRoundedPosition() const { return { std::round(mRectangle.left), std::round(mRectangle.top) }; }
 
+    void SetWidth(float value) { mRectangle.width = value; }
+    void SetHeight(float value) { mRectangle.height = value; }
     void SetLeft(float value) { mRectangle.left = value; }
     void SetTop(float value) { mRectangle.top = value; }
     void SetRight(float value) { mRectangle.left = value - mRectangle.width; }
@@ -54,10 +62,8 @@ public:
         mRectangle.height = size.y;
     }
 
-    void MoveLeft(float value) { SetLeft(GetLeft() + value); }
-    void MoveTop(float value) { SetTop(GetTop() + value); }
-    void MoveRight(float value) { SetRight(GetRight() + value); }
-    void MoveBottom(float value) { SetBottom(GetBottom() + value); }
+    void MoveX(float value) { SetLeft(GetLeft() + value); }
+    void MoveY(float value) { SetTop(GetTop() + value); }
 
     void SetRectMidTop(const sf::Vector2f& value)
     {
@@ -71,19 +77,29 @@ public:
         mRectangle.top = value.y - mRectangle.height;
     }
 
-    sf::Vector2f GetRectMidBottom()
+    sf::Vector2f GetRectMidBottom() const
     {
         return sf::Vector2f(mRectangle.left + mRectangle.width / 2.0f, mRectangle.top + mRectangle.height);
     }
 
-    sf::Vector2f GetRectMidTop()
+    sf::Vector2f GetRectMidTop() const
     {
         return sf::Vector2f(mRectangle.left + mRectangle.width / 2.0f, mRectangle.top);
     }
 
-    sf::Vector2f GetRectMidLeft()
+    sf::Vector2f GetRectMidLeft() const
     {
         return sf::Vector2f(mRectangle.left, mRectangle.top + mRectangle.height / 2.0f);
+    }
+
+    sf::Vector2f GetRectBottomLeft() const
+    {
+        return sf::Vector2f(mRectangle.left, mRectangle.top + mRectangle.height);
+    }
+
+    sf::Vector2f GetRectBottomRight() const
+    {
+        return sf::Vector2f(mRectangle.left + mRectangle.width, mRectangle.top + mRectangle.height);
     }
 
 private:

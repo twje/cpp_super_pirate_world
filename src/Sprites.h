@@ -10,9 +10,12 @@
 #include "Core/Animate.h"
 #include "Core/ResourceManager.h"
 #include "Core/Timer.h"
+#include "Core/DrawUtils.h"
+#include "Core/RectUtils.h"
 
 // System
 #include <cmath>
+#include <iostream>
 
 //------------------------------------------------------------------------------
 class Sprite : public GameObject
@@ -287,10 +290,75 @@ public:
           uint32_t animSpeed, Group& collisionSprites)
         : AnimatedSpriteImpl(position, scale, animFrames, animSpeed, DEPTHS.at("main"))
         , mCollisionSprites(collisionSprites)
-    { }
+        , mDirection(1.0f)
+        , mSpeed(200.0f)
+    {
+        mHitbox = GetGlobalBounds();
+    }
+
+    virtual FloatRect GetHitbox() const { return mHitbox; }
+
+    virtual void Update(const sf::Time& timeslice)
+    {
+        float delta = mDirection * mSpeed * timeslice.asSeconds();
+        mHitbox.MoveX(delta);
+
+        sf::Vector2f floorCollider = CreateFloorCollider();
+        sf::FloatRect wallCollider = CreateWallCollider();
+        
+        if (ShouldReverseDir(floorCollider, wallCollider))
+        {
+            mDirection *= -1.0f;
+            FlipHort(mDirection < 0.0f);
+        }
+
+        UpdateAnimation(timeslice);   
+        SetPosition(mHitbox.GetRoundedPosition());
+    }
 
 private:
+    sf::Vector2f CreateFloorCollider()
+    {
+        sf::Vector2f floorCollider = mDirection > 0.0f ? mHitbox.GetRectBottomRight() : mHitbox.GetRectBottomLeft();
+        floorCollider.y += 1;
+
+        return floorCollider;
+    }
+
+    sf::FloatRect CreateWallCollider()
+    {        
+        sf::FloatRect wallColider = InflateRect(mHitbox, 2, 0);
+        wallColider.height = 1;
+        
+        return wallColider;
+    }
+
+    bool ShouldReverseDir(const sf::Vector2f& floorCollider, const sf::FloatRect& wallCollider) const 
+    {        
+        bool onFloor = false;
+        bool hitWall = false;
+
+        for (GameObject* object : mCollisionSprites)
+        {
+            if (object->GetHitbox().ContainsPoint(floorCollider))
+            {
+                onFloor = true;
+            }
+            if (object->GetHitbox().FindIntersection(wallCollider))
+            {
+                hitWall = true;
+                break;
+            }
+        }
+
+        return hitWall || !onFloor;
+    }
+
     Group& mCollisionSprites;
+    float mDirection;
+    float mSpeed;
+    FloatRect mHitbox;
+    sf::FloatRect mTemp;
 };
 
 //------------------------------------------------------------------------------
