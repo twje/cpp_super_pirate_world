@@ -54,20 +54,29 @@ public:
         mSprite.setPosition({ posX, mSprite.getPosition().y });
     }
 
+    void FlipVert(bool flag)
+    {
+        // Transform is applied in local space
+        float scaleY = flag ? -1.0f : 1.0f;
+        float posY = flag ? mSprite.getLocalBounds().height : 0.0f;
+
+        mSprite.setScale({ mSprite.getScale().x, scaleY });
+        mSprite.setPosition({ mSprite.getPosition().x, posY });
+    }
+
 private:
     sf::Sprite mSprite;
     uint32_t mDepth;
 };
 
 //------------------------------------------------------------------------------
-class AnimatedSprite : public GameObject
+class AnimatedSprite : public Sprite
 {
 public:
     AnimatedSprite(const sf::Vector2f& position, const sf::Vector2f& scale, TextureVector& animFrames,
-        uint32_t animSpeed, uint32_t depth)
-        : mAnimation(animSpeed)
-        , mSprite(*animFrames[0])
-        , mDepth(depth)
+                   uint32_t animSpeed, uint32_t depth)
+        : Sprite(*animFrames[0], position, depth)
+        , mAnimation(animSpeed)                
     {
         SetScale(scale);
         SetPosition(position);
@@ -81,55 +90,19 @@ public:
         mAnimation.SetSequence("current");
     }
 
-    virtual uint32_t GetDepth() const override { return mDepth; }
-
-    virtual FloatRect GetGlobalBounds() const
-    {
-        return GetTransform().transformRect(mSprite.getLocalBounds());
-    }
-
     virtual void Update(const sf::Time& timeslice)
     {
         UpdateAnimation(timeslice);
     }
 
-    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
-    {
-        sf::RenderStates statesCopy(states);
-        statesCopy.transform *= GetTransform();
-        target.draw(mSprite, statesCopy);
-    }
-
     void UpdateAnimation(const sf::Time& timeslice)
     {
         mAnimation.Update(timeslice);
-        mSprite.setTexture(mAnimation.GetTexture(), true);
-    }
-
-    void FlipHort(bool flag)
-    {
-        // Transform is applied in local space
-        float scaleX = flag ? -1.0f : 1.0f;
-        float posX = flag ? mSprite.getLocalBounds().width : 0.0f;
-
-        mSprite.setScale({ scaleX, mSprite.getScale().y });
-        mSprite.setPosition({ posX, mSprite.getPosition().y });
-    }
-
-    void FlipVert(bool flag)
-    {
-        // Transform is applied in local space
-        float scaleY = flag ? -1.0f : 1.0f;
-        float posY = flag ? mSprite.getLocalBounds().height : 0.0f;
-
-        mSprite.setScale({ mSprite.getScale().x, scaleY });
-        mSprite.setPosition({ mSprite.getPosition().x, posY });
+        SetTexture(mAnimation.GetTexture(), true);
     }
 
 private:
     Animation mAnimation;
-    sf::Sprite mSprite;
-    uint32_t mDepth;
 };
 
 //------------------------------------------------------------------------------
