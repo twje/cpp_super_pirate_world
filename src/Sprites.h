@@ -4,6 +4,7 @@
 #include "Settings.h"
 #include "GameData.h"
 #include "Interfaces.h"
+#include "Player.h"
 
 // Core
 #include "Core/GameObject.h"
@@ -215,12 +216,42 @@ private:
 };
 
 //------------------------------------------------------------------------------
+class Pearl : public Sprite
+{
+public:
+    Pearl(const sf::Texture& texture, const sf::Vector2f& position, float direction, float speed)
+        : Sprite(texture, position, DEPTHS.at("main"))
+        , mDirection(direction)
+        , mSpeed(speed)
+        , mTimer(sf::milliseconds(5000))
+    {
+        Move({ direction * 50.0f, 0.0f });
+        mTimer.Start();
+    }
+
+    virtual void Update(const sf::Time& timeslice)
+    {        
+        float delta = mDirection * mSpeed * timeslice.asSeconds();        
+        Move({ delta, 0.0f });
+
+        mTimer.Update(timeslice);
+        if (mTimer.IsFinished()) { Kill(); }
+    };
+
+private:
+    float mDirection;
+    float mSpeed;
+    Timer mTimer;
+};
+
+//------------------------------------------------------------------------------
 class Shell : public AnimatedSprite
 {
 public:
-    Shell(const sf::Vector2f& position, bool isReverse, TextureMap& animFrames, uint32_t animSpeed, ILevel& levelCallbacks)
+    Shell(const sf::Vector2f& position, bool isReverse, TextureMap& animFrames, uint32_t animSpeed, Player& player, ILevel& levelCallbacks)
         : AnimatedSprite(position, sf::Vector2f(1.0f, 1.0f), animFrames["idle"], animSpeed, DEPTHS.at("main"))
         , mIsReverse(isReverse)
+        , mPlayer(player)
         , mLevelCallbacks(levelCallbacks)
         , mState("idle")
         , mBulletDirection(isReverse ? -1.0f : 1.0f)
@@ -240,9 +271,12 @@ public:
     {
         mShootTimer.Update(timeslice);
 
-        bool isPlayerNear = true;
-        bool isPlayerFront = true;
-        bool isPlayerLevel = true;
+        sf::Vector2f playerPos = mPlayer.GetGlobalBounds().GetCenter();
+        sf::Vector2f shellPos = GetGlobalBounds().GetCenter();
+
+        bool isPlayerFront = (mBulletDirection > 0.0f) ? (shellPos.x < playerPos.x) : (shellPos.x > playerPos.x);
+        bool isPlayerNear = (shellPos - playerPos).length() < 500;
+        bool isPlayerLevel = std::abs(shellPos.y - playerPos.y) < 30.0f;
 
         if (isPlayerNear && isPlayerFront && isPlayerLevel && mShootTimer.IsFinished())
         {
@@ -260,7 +294,7 @@ public:
         }
         else if (mState == "fire" && GetAnimationFrameIndex() == 3 && !mHasFired)
         {
-            mLevelCallbacks.CreatePearl();
+            mLevelCallbacks.CreatePearl(GetGlobalBounds().GetCenter(), mBulletDirection);
             mHasFired = true;
         }
 
@@ -274,6 +308,7 @@ public:
 
 private:
     bool mIsReverse;
+    Player& mPlayer;
     ILevel& mLevelCallbacks;
     std::string mState;
     float mBulletDirection;

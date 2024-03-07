@@ -343,6 +343,7 @@ private:
                                                              object.GetPropertyValue<bool>("reverse"),
                                                              mGameAssets.GetTextureDirMap(object.GetName()),
                                                              ANIMATION_SPEED,
+                                                             *mPlayer,
                                                              *this);
                 AddToCommonGroups(sprite);
                 mCollisionSprites.AddGameObject(sprite);
@@ -401,9 +402,12 @@ private:
         }
     }
 
-    virtual void CreatePearl() override
+    virtual void CreatePearl(const sf::Vector2f& position, float direction) override
     {
-        std::cout << "create pearl" << std::endl;
+        GameObject* sprite = CreateGameObject<Pearl>(mGameAssets.GetTexture("pearl"), position, direction, 150);
+        AddToCommonGroups(sprite);
+        mDemageSprites.AddGameObject(sprite);
+        mPearlSprites.AddGameObject(sprite);
     }
 
     template<typename T, typename... Args>
