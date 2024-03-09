@@ -1,0 +1,1 @@
+Acknowledgment to the original author - [Super Pirate World](https://github.com/clear-code-projects/Super-Pirate-World)
