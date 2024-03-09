@@ -18,6 +18,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Include external dependencies using FetchContent
 include(FetchContent)
 
+# Add tileson header-only library
+FetchContent_Declare(
+  tileson
+  GIT_REPOSITORY https://github.com/twje/tileson.git
+  GIT_TAG        master
+)
+
+FetchContent_GetProperties(tileson)
+if(NOT tileson_POPULATED)
+  FetchContent_Populate(tileson)        # does not execute project's cmake script
+endif()
+
 # Add SFML dependency
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
 
@@ -77,6 +89,7 @@ target_link_libraries(Library PUBLIC
 target_include_directories(Library PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${SFML_SOURCE_DIR}/include
+    ${tileson_SOURCE_DIR}
 )
 
 # Create the executable for the project
