@@ -54,3 +54,4 @@ ignore
 scripts/venv
 out
 buildnumber.txt
+designs
