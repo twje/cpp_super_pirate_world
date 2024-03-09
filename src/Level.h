@@ -81,10 +81,11 @@ public:
             }
         }
 
-        //for (GameObject* object : mAllSprites)
-        //{
-        //    DrawRect<float>(window, object->GetHitbox(), sf::Color::Green);
-        //}
+        for (GameObject* object : mAllSprites)
+        {
+            //DrawRect<float>(window, object->GetGlobalBounds(), sf::Color::Red);
+            //DrawRect<float>(window, object->GetHitbox(), sf::Color::Green);
+        }
     }
 
     void DrawHUD(sf::RenderWindow& window)
@@ -121,7 +122,11 @@ private:
             if (object.GetName() == "player")
             {
                 GameObjectManager& gameObjectManager = GameObjectManager::Instance();
-                mPlayer = gameObjectManager.CreateGameObject<Player>(sf::Vector2f());
+                mPlayer = gameObjectManager.CreateGameObject<Player>(object.GetPosition(),
+                                                                     mGameAssets.GetTextureDirMap("player"),
+                                                                     mCollisionSprites,
+                                                                     mSemiCollisionSprites,
+                                                                     mGameData);
                 AddToCommonGroups(mPlayer);
             }
         }

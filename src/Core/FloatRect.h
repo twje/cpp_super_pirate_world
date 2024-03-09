@@ -41,6 +41,7 @@ public:
     float GetHeight() const { return mRectangle.height; }
     float GetCenterY() const { return mRectangle.top + mRectangle.height / 2.0f; }
     float GetCenterX() const { return mRectangle.left + mRectangle.width / 2.0f; }
+    sf::Vector2f GetSize() const { return { mRectangle.width, mRectangle.height }; }
     sf::Vector2f GetCenter() const { return { GetCenterX(), GetCenterY() }; }
     sf::Vector2f GetPosition() const { return { mRectangle.left, mRectangle.top }; }
     sf::Vector2f GetRoundedPosition() const { return { std::round(mRectangle.left), std::round(mRectangle.top) }; }
