@@ -42,7 +42,7 @@ bool GameObject::IsDownCollision(const GameObject& other) const
     FloatRect hitbox1 = other.GetHitbox();
     FloatRect previousHitbox1 = other.GetPreviousHitbox();
 
-    return hitbox0.GetBottom() >= hitbox1.GetTop() && static_cast<int32_t>(previousHitbox0.GetBottom()) <= static_cast<int32_t>(previousHitbox1.GetTop());
+    return hitbox0.GetBottom() >= hitbox1.GetTop() && (previousHitbox0.GetBottom()) <= (previousHitbox1.GetTop());
 }
 
 //------------------------------------------------------------------------------
