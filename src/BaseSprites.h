@@ -129,4 +129,5 @@ public:
 
 private:
     Animation mAnimation;
+    
 };

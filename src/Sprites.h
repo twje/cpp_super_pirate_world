@@ -319,6 +319,14 @@ public:
         mPreviousHitbox = mHitbox;
     }
 
+    const sf::Vector2f& GetDirection() const { return mDirection; }
+    float GetSpeed() const { return mSpeed; }
+
+    virtual uint32_t GetType() const 
+    { 
+        return static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM); 
+    }
+
     virtual FloatRect GetHitbox() const override
     {
         return mHitbox;

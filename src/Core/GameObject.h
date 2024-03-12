@@ -19,6 +19,7 @@ class GameObject : public sf::Drawable, public Tranformable
 public:
     virtual ~GameObject() = default;
 
+    virtual uint32_t GetType() const { return 0; }
     virtual FloatRect GetGlobalBounds() const = 0;
     virtual uint32_t GetDepth() const { return 0; }
     virtual void Update(const sf::Time& timeslice) { };

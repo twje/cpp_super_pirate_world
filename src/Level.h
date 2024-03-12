@@ -54,7 +54,8 @@ public:
         {
             object->Update(timeslice);
         }
-                
+        mPlayer->Update(timeslice);
+         
         mGameView.setCenter(mPlayer->GetCameraCenter());
 
         return true;
@@ -126,8 +127,8 @@ private:
                                                                      mGameAssets.GetTextureDirMap("player"),
                                                                      mCollisionSprites,
                                                                      mSemiCollisionSprites,
-                                                                     mGameData);
-                AddToCommonGroups(mPlayer);
+                                                                     mGameData);                
+                mDrawGroups[mPlayer->GetDepth()].AddGameObject(mPlayer);
             }
         }
     }
@@ -446,5 +447,5 @@ private:
     Group mDemageSprites;
     Group mToothSprites;
     Group mPearlSprites;
-    Group mItemSprites;
+    Group mItemSprites;    
 };
