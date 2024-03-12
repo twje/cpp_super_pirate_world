@@ -44,6 +44,7 @@ public:
         mTimers = {
             { "wall jump", Timer(sf::milliseconds(400)) },
             { "wall slide block", Timer(sf::milliseconds(250)) },
+            { "platform skip", Timer(sf::milliseconds(100)) },
         };
 
         SetOrigin(GetGlobalBounds().GetSize() * 0.5f);
@@ -120,6 +121,11 @@ private:
             else
             {
                 mDirection.x = 0.0f;
+            }
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
+            {
+                mTimers.at("platform skip").Start();
             }
         }
 
@@ -307,14 +313,24 @@ private:
     }
 
     void ResolveVertCollision(std::vector<const GameObject*>& objectsBelow, std::vector<const GameObject*>& objectsAbove)
-    {
+    {        
         // Resolve floor objects
         const GameObject* lowestYVelocityoObject = nullptr;
         for (const GameObject* object : objectsBelow)
-        {
+        {    
+            bool isPlatform = (object->GetType() == static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM));
+            if (isPlatform && mTimers.at("platform skip").IsActive())
+            {
+                continue;
+            }
+
             if (!lowestYVelocityoObject || object->GetVelocity().y < lowestYVelocityoObject->GetVelocity().y)
             {
-                lowestYVelocityoObject = object;
+                lowestYVelocityoObject = object;  
+                if (isPlatform)
+                {
+                    mPlatformId = lowestYVelocityoObject->GetEntityId();
+                }
             }
         }
 
@@ -323,11 +339,6 @@ private:
             mHitbox.SetBottom(lowestYVelocityoObject->GetHitbox().GetTop());
             mDirection.y = 0;
             mSurfaceState["floor"] = true;
-
-            if (lowestYVelocityoObject->GetType() == static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM))
-            {
-                mPlatformId = lowestYVelocityoObject->GetEntityId();
-            }
         }
 
         // Resolve ceiling objects
