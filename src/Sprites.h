@@ -337,10 +337,16 @@ public:
         return mPreviousHitbox;
     }
 
+    virtual const sf::Vector2f GetVelocity() const  override
+    { 
+        return mVelocity;
+    };
+
     virtual void Update(const sf::Time& timeslice)
     {
         mPreviousHitbox = mHitbox;
-        sf::Vector2f newPosition = mHitbox.GetPosition() + mDirection * mSpeed * timeslice.asSeconds();
+        mVelocity = mDirection * mSpeed * timeslice.asSeconds();
+        sf::Vector2f newPosition = mHitbox.GetPosition() + mVelocity;
         mHitbox.SetPosition(newPosition);
 
         if (mIsVertMovement)
@@ -398,6 +404,7 @@ private:
     bool mIsVertReverseDir;
     bool mIsHortReverseDir;
     sf::Vector2f mDirection;
+    sf::Vector2f mVelocity;
     FloatRect mHitbox;
     FloatRect mPreviousHitbox;
 };

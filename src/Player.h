@@ -14,8 +14,8 @@
 class Player : public AnimatedSprite
 {
 public:
-    Player(const sf::Vector2f& position, TextureMap& animFrames, Group& collisionSprites, Group& semiCollisionSprites, 
-           GameData& gameData)
+    Player(const sf::Vector2f& position, TextureMap& animFrames, Group& collisionSprites, Group& semiCollisionSprites,
+        GameData& gameData)
         : AnimatedSprite(position, { 1.0f, 1.0f }, animFrames["idle"], ANIMATION_SPEED, DEPTHS.at("player"))
         , mCollisionSprites(collisionSprites)
         , mSemiCollisionSprites(semiCollisionSprites)
@@ -23,7 +23,7 @@ public:
         , mSpeed(200.0f)
         , mGravity(1300.0f)
         , mJumpHeight(900)
-        , mIsFacingRight(true)  
+        , mIsFacingRight(true)
         , mIsJumping(false)
         , mIsAttacking(false)
         , mPlatformId(0)
@@ -39,20 +39,92 @@ public:
             { "left", false },
             { "right", false },
         };
-        
+
         SetOrigin(GetGlobalBounds().GetSize() * 0.5f);
         Move(GetGlobalBounds().GetSize() * 0.5f);
         mHitbox = InflateRect(GetGlobalBounds(), -76, -36);
         mPreviousHitbox = mHitbox;
     }
 
-    virtual FloatRect GetHitbox() const override { return mHitbox; }
-    virtual FloatRect GetPreviousHitbox() const override { return mPreviousHitbox; }
+    virtual FloatRect GetHitbox() const override
+    {
+        return mHitbox;
+    }
+
+    virtual FloatRect GetPreviousHitbox() const override
+    {
+        return mPreviousHitbox;
+    }
 
     virtual void Update(const sf::Time& timeslice)
-    {
+    {        
         mPreviousHitbox = mHitbox;
+        Input();
+ 
+        GameObjectManager& manager = GameObjectManager::Instance();
+        
+        float deltaX = mDirection.x * mSpeed * timeslice.asSeconds();
 
+        // Handle moving platform
+        GameObject* platform = manager.GetInstance(mPlatformId);
+        if (mSurfaceState["floor"] && platform)
+        {
+            sf::Vector2f previousFramePlatformVelocity = platform->GetHitbox().GetPosition() - platform->GetPreviousHitbox().GetPosition();
+
+            if (previousFramePlatformVelocity.y > 0.0f)
+            {
+                mDirection.y += previousFramePlatformVelocity.y;
+                mHitbox.SetBottom(platform->GetHitbox().GetTop());
+            }
+            deltaX += previousFramePlatformVelocity.x;
+        }
+        
+        // Vert movement
+        if (mIsJumping)
+        {
+            if (mSurfaceState["floor"])
+            {
+                mDirection.y = -mJumpHeight;
+            }
+            mIsJumping = false;
+        }
+
+        mDirection.y += mGravity * 0.5f * timeslice.asSeconds();
+        // https://stackoverflow.com/questions/60198718/gravity-strength-and-jump-height-somehow-dependant-on-framerate-pygame
+        // This step accounts for the distance the object travels while accelerating
+        mHitbox.MoveY(mDirection.y * timeslice.asSeconds());
+        mDirection.y += mGravity * 0.5f * timeslice.asSeconds(); // TODO: investigate
+        
+        CheckAndResolveVertCollision();
+        
+        // Hort movement
+        mHitbox.MoveX(deltaX);
+        CheckAndResolveHortCollision();
+
+        SetPosition(mHitbox.GetCenter());   
+    };
+
+    sf::Vector2f GetCameraCenter() { return GetGlobalBounds().GetCenter(); }
+
+    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
+    {        
+        DrawRect<float>(target, CreateLeftWallCollider(), sf::Color::Green);
+        DrawRect<float>(target, CreateRightWallCollider(), sf::Color::Green);
+        DrawRect<float>(target, GetHitbox(), sf::Color::Red);
+        Sprite::draw(target, states);
+
+        FloatRect floorIndicator(sf::Vector2f(10, 10), sf::Vector2f(20, 20));
+        sf::Color color = sf::Color::Red;
+        if (mSurfaceState.at("floor"))
+        {
+            sf::Color color = sf::Color::Green;
+        }
+        DrawRect<float>(target, floorIndicator, color);
+    }
+
+private:
+    void Input()
+    {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
         {
             mDirection.x = 1.0f;
@@ -66,180 +138,18 @@ public:
         else
         {
             mDirection.x = 0.0f;
-        }       
+        }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space))
         {
-            mIsJumping = true;            
+            mIsJumping = true;
         }
-
-        // Hort movement
-        float deltaX = mDirection.x * mSpeed * timeslice.asSeconds();
-        mHitbox.MoveX(deltaX);        
-        HortCollision();
-        
-        // Vert movement
-        // TEST
-
-        mDirection.y += mGravity * 0.5f * timeslice.asSeconds();
-        // https://stackoverflow.com/questions/60198718/gravity-strength-and-jump-height-somehow-dependant-on-framerate-pygame
-        // This step accounts for the distance the object travels while accelerating
-        mHitbox.MoveY(mDirection.y * timeslice.asSeconds());
-        mDirection.y += mGravity * 0.5f * timeslice.asSeconds(); // TODO: investigate
-        
-        if (mIsJumping)
-        {
-            if (mSurfaceState["floor"])
-            {
-                mDirection.y = -mJumpHeight;
-                // Prevent vertical collision response from sticking the player to the ground.
-                mHitbox.MoveY(-1);                
-            }
-            mIsJumping = false;
-        }
-        
-        VertCollision();
-        SetPosition(mHitbox.GetCenter());    
-
-        // AFTER
-        CheckContact();
-        PlatformMove(timeslice);
-        SemiCollision();
-
-        UpdateState();
-        Animate(timeslice);
-    };
-
-    sf::Vector2f GetCameraCenter() { return GetGlobalBounds().GetCenter(); }
-
-    virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
-    {
-        DrawRect<float>(target, CreateFloorCollider(), sf::Color::Green);
-        DrawRect<float>(target, CreateLeftWallCollider(), sf::Color::Green);
-        DrawRect<float>(target, CreateRightWallCollider(), sf::Color::Green);
-        DrawRect<float>(target, GetHitbox(), sf::Color::Red);
-        Sprite::draw(target, states);
-
-        if (mPlatformId > 0)
-        {
-            GameObjectManager& manager = GameObjectManager::Instance();
-            if (GameObject* object = manager.GetInstance(mPlatformId))
-            {
-                DrawRect<float>(target, object->GetHitbox(), sf::Color::Yellow);
-            }
-        }
-    }
-
-private:
-    //void Move(const sf::Time& timeslice)
-    //{
-
-    //}
-
-    void PlatformMove(const sf::Time& timeslice);
-
-    void CheckContact()
-    {
-        CheckFloorContact();
-        CheckWallContact();
-        CheckPlatformContact();        
-    }
-
-    void CheckFloorContact()
-    {
-        mSurfaceState["floor"] = false;
-        bool floorContactDetected = false;
-
-        if (mDirection.y >= 0.0f)
-        {
-            FloatRect floorCollider = CreateFloorCollider();
-
-            for (GameObject* object : mCollisionSprites)
-            {
-                if (floorContactDetected) { break; }
-
-                FloatRect objectHitbox = object->GetHitbox();
-                if (floorCollider.FindIntersection(objectHitbox))
-                {
-                    mSurfaceState["floor"] = true;
-                    floorContactDetected = true;
-                }
-            }
-
-            for (GameObject* object : mSemiCollisionSprites)
-            {
-                if (floorContactDetected) { break; }
-
-                FloatRect objectHitbox = object->GetHitbox();
-                if (floorCollider.FindIntersection(objectHitbox))
-                {
-                    mSurfaceState["floor"] = true;
-                    floorContactDetected = true;
-                }
-            }
-        }
-    }
-
-    void CheckWallContact()
-    {
-        // Implement
-    }
-
-    void CheckPlatformContact()
-    {
-        mPlatformId = 0;
-        FloatRect floorCollider = CreateFloorCollider();        
-        bool platformContactDetected = false;
-
-        for (GameObject* object : mCollisionSprites)
-        {
-            if (platformContactDetected) { break; }
-
-            FloatRect objectHitbox = object->GetHitbox();
-            if (floorCollider.FindIntersection(objectHitbox))
-            {             
-                if (object->GetType() == static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM))
-                {
-                    mPlatformId = object->GetEntityId();
-                    platformContactDetected = true;
-                }
-            }
-        }
-
-        for (GameObject* object : mSemiCollisionSprites)
-        {   
-            if (platformContactDetected) { break; }
-
-            FloatRect objectHitbox = object->GetHitbox();
-            if (floorCollider.FindIntersection(objectHitbox))
-            {                
-                if (object->GetType() == static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM))
-                {
-                    mPlatformId = object->GetEntityId();
-                    platformContactDetected = true;
-                }
-            }
-        }
-    }
-
-    void UpdateState()
-    {
-
-    }
+    }    
 
     void Animate(const sf::Time& timeslice)
     {
         UpdateAnimation(timeslice);
-        FlipHort(!mIsFacingRight);      
-    }
-
-    FloatRect CreateFloorCollider() const
-    {
-        FloatRect collider = GetHitbox();
-        collider.SetHeight(2.0f);
-        collider.SetTop(GetHitbox().GetBottom());
-        
-        return collider;
+        FlipHort(!mIsFacingRight);
     }
 
     FloatRect CreateLeftWallCollider() const
@@ -260,7 +170,7 @@ private:
         return collider;
     }
 
-    void HortCollision()
+    void CheckAndResolveHortCollision()
     {
         for (GameObject* object : mCollisionSprites)
         {
@@ -279,8 +189,13 @@ private:
         }
     }
 
-    void VertCollision()
+    void CheckAndResolveVertCollision()
     {
+        mPlatformId = false;
+        mSurfaceState["floor"] = false;
+        std::vector<const GameObject*> objectsBelow;
+        std::vector<const GameObject*> objectsAbove;
+
         for (GameObject* object : mCollisionSprites)
         {
             FloatRect objectHitbox = object->GetHitbox();
@@ -288,35 +203,74 @@ private:
             {
                 if (IsUpCollision(*object))
                 {
-                    mHitbox.SetTop(objectHitbox.GetBottom());
-                    // TEMP
-                    //if (mPlatformId > 0) { mHitbox.MoveY(6); }
+                    objectsAbove.emplace_back(object);
                 }
                 if (IsDownCollision(*object))
                 {
-                    mHitbox.SetBottom(objectHitbox.GetTop());
+                    objectsBelow.emplace_back(object);
                 }
-
-                // Prevent velocity from accumulating and player falling through floor
-                mDirection.y = 0.0f;
             }
         }
-    }
 
-    void SemiCollision()
-    {
-        // TODO: add timer
         for (GameObject* object : mSemiCollisionSprites)
         {
             FloatRect objectHitbox = object->GetHitbox();
             if (mHitbox.FindIntersection(objectHitbox))
             {
+                if (IsUpCollision(*object))
+                {
+                    objectsAbove.emplace_back(object);
+                }
                 if (IsDownCollision(*object))
                 {
-                    mHitbox.SetBottom(objectHitbox.GetTop());
-                    // Stop player falling through platform when moving down
-                    if (mDirection.y > 0.0f) { mDirection.y = 0.0f; }
+                    objectsBelow.emplace_back(object);
                 }
+            }
+        }
+        ResolveVertCollision(objectsBelow, objectsAbove);
+    }
+
+    void ResolveVertCollision(std::vector<const GameObject*>& objectsBelow, std::vector<const GameObject*>& objectsAbove)
+    {
+        // Resolve floor objects
+        const GameObject* lowestYVelocityoObject = nullptr;
+        for (const GameObject* object : objectsBelow)
+        {
+            if (!lowestYVelocityoObject || object->GetVelocity().y < lowestYVelocityoObject->GetVelocity().y)
+            {
+                lowestYVelocityoObject = object;
+            }
+        }
+
+        if (lowestYVelocityoObject)
+        {
+            mHitbox.SetBottom(lowestYVelocityoObject->GetHitbox().GetTop());
+            mDirection.y = 0;
+            mSurfaceState["floor"] = true;
+
+            if (lowestYVelocityoObject->GetType() == static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM))
+            {
+                mPlatformId = lowestYVelocityoObject->GetEntityId();
+            }
+        }
+
+        // Resolve ceiling objects
+        const GameObject* highestYVelocityObject = nullptr;
+        for (const GameObject* object : objectsAbove)
+        {
+            if (!highestYVelocityObject || object->GetVelocity().y > highestYVelocityObject->GetVelocity().y)
+            {
+                highestYVelocityObject = object;
+            }
+        }
+
+        if (highestYVelocityObject)
+        {
+            // Allow jump through platforms
+            if (highestYVelocityObject->GetType() != static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM))
+            {
+                mHitbox.SetTop(highestYVelocityObject->GetHitbox().GetBottom());
+                mDirection.y = highestYVelocityObject->GetVelocity().y;
             }
         }
     }
