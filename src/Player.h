@@ -130,15 +130,13 @@ private:
     }    
 
     void Move(const sf::Time& timeslice)
-    {
-        GameObjectManager& manager = GameObjectManager::Instance();
-        
+    {        
         // Handle moving platform
         sf::Vector2f previousFramePlatformVelocity;
         float deltaX = 0.0f;
 
-        GameObject* platform = manager.GetInstance(mPlatformId);
-        if (mSurfaceState["floor"] && platform)
+        GameObject* platform = GameObjectManager::Instance().GetGameObject(mPlatformId);
+        if (platform && mSurfaceState["floor"])
         {
             previousFramePlatformVelocity = platform->GetHitbox().GetPosition() - platform->GetPreviousHitbox().GetPosition();
 
@@ -194,6 +192,7 @@ private:
         // Hort movement
         deltaX += mDirection.x * mSpeed * timeslice.asSeconds();
         mHitbox.MoveX(deltaX);
+
         CheckAndResolveHortCollision();
 
         SetPosition(mHitbox.GetCenter());

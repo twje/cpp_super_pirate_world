@@ -39,7 +39,7 @@ void GameObjectManager::SyncGameObjectChanges()
 }
 
 //------------------------------------------------------------------------------
-GameObject* GameObjectManager::GetInstance(uint32_t entityId)
+GameObject* GameObjectManager::GetGameObject(uint32_t entityId)
 {
     auto it = mGameObjectLookup.find(entityId);
     if (it != mGameObjectLookup.end())

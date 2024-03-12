@@ -31,7 +31,7 @@ public:
     }
 
     void SyncGameObjectChanges();
-    GameObject* GetInstance(uint32_t entityId);
+    GameObject* GetGameObject(uint32_t entityId);
     void RemoveAllGameObjects();
 
     size_t Count() const { return mGameObjects.size(); }
