@@ -63,11 +63,11 @@ public:
         , mState("idle")
         , mSpeed(200.0f)
         , mGravity(1300.0f)
-        , mJumpHeight(900)
-        , mIsFacingRight(true)
+        , mJumpHeight(900)        
         , mIsJumping(false)
         , mIsAttacking(false)
-        , mPlatformId(0)
+        , mPrvSpaceKeyPress(false)
+        , mCntSpaceKeyPress(false)
     {
         for (const auto& [sequenceId, frames] : animFrames)
         {
@@ -110,7 +110,6 @@ public:
         UpdateTimers(timeslice);
         Input();
         Move(timeslice);
-        //CheckWallContact();
     };
    
     virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
@@ -119,11 +118,6 @@ public:
         DrawRect<float>(target, CreateRightWallCollider(), sf::Color::Green);
         DrawRect<float>(target, GetHitbox(), sf::Color::Red);
         Sprite::draw(target, states);
-
-        for (const GameObject* object : objectsBelow)
-        {
-            DrawRect<float>(target, object->GetHitbox(), sf::Color::Yellow);
-        }
 
         FloatRect floorIndicator(sf::Vector2f(10, 10), sf::Vector2f(20, 20));
         sf::Color color = sf::Color::Red;
@@ -156,12 +150,10 @@ private:
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
             {
                 mDirection.x = 1.0f;
-                mIsFacingRight = true;
             }
             else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
             {
                 mDirection.x = -1.0f;
-                mIsFacingRight = false;
             }
             else
             {
@@ -174,10 +166,10 @@ private:
             }
         }
 
-        prvSpaceKeyPress = cntSpaceKeyPress;
-        cntSpaceKeyPress = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
+        mPrvSpaceKeyPress = mCntSpaceKeyPress;
+        mCntSpaceKeyPress = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
  
-        if (cntSpaceKeyPress && !prvSpaceKeyPress)
+        if (mCntSpaceKeyPress && !mPrvSpaceKeyPress)
         {
             mIsJumping = true;
         }
@@ -312,7 +304,7 @@ private:
     void Animate(const sf::Time& timeslice)
     {
         UpdateAnimation(timeslice);
-        FlipHort(!mIsFacingRight);
+        FlipHort(mDirection.x > 0.0f);
     }
 
     FloatRect CreateLeftWallCollider() const
@@ -363,7 +355,6 @@ private:
 
     void CheckAndResolveVertCollision()
     {
-        // <comment>
         for (GameObject* object : mCollisionSprites)
         {
             FloatRect objectHitbox = object->GetHitbox();
@@ -382,137 +373,22 @@ private:
             }
         }
 
-        // <comment>
         for (GameObject* object : mSemiCollisionSprites)
         {
             FloatRect objectHitbox = object->GetHitbox();
             if (mHitbox.FindIntersection(objectHitbox))
             {
                 if (IsDownCollision(*object) && !mTimers.at("platform skip").IsActive())
-                {   
+                {
+                    bool isPlatform = (object->GetType() == static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM));
+                    if (isPlatform && mTimers.at("platform skip").IsActive())
+                    {
+                        continue;
+                    }
+
                     mHitbox.SetBottom(objectHitbox.GetTop());
                     mDirection.y = 0.0f;
                 }
-            }
-        }
-
-        //objectsBelow.clear();
-
-        //mPlatformId = 0;
-        //mSurfaceState["floor"] = false;
-        ////std::vector<const GameObject*> objectsBelow;
-        //std::vector<const GameObject*> objectsAbove;
-
-        //for (GameObject* object : mCollisionSprites)
-        //{
-        //    FloatRect objectHitbox = object->GetHitbox();
-        //    if (mHitbox.FindIntersection(objectHitbox))
-        //    {
-        //        if (IsUpCollision(*object))
-        //        {
-        //            objectsAbove.emplace_back(object);
-        //        }
-        //        if (IsDownCollision(*object))
-        //        {
-        //            objectsBelow.emplace_back(object);
-        //        }
-        //    }
-        //}
-
-        //for (GameObject* object : mSemiCollisionSprites)
-        //{
-        //    FloatRect objectHitbox = object->GetHitbox();
-        //    if (mHitbox.FindIntersection(objectHitbox))
-        //    {
-        //        if (IsUpCollision(*object))
-        //        {
-        //            objectsAbove.emplace_back(object);
-        //        }
-        //        if (IsDownCollision(*object))
-        //        {
-        //            objectsBelow.emplace_back(object);
-        //        }
-        //    }
-        //}
-        //ResolveVertCollision(objectsBelow, objectsAbove);
-    }
-
-    void ResolveVertCollision(std::vector<const GameObject*>& objectsBelow, std::vector<const GameObject*>& objectsAbove)
-    {        
-        // Resolve floor objects
-        const GameObject* lowestYVelocityoObject = nullptr;
-        for (const GameObject* object : objectsBelow)
-        {            
-            if (!lowestYVelocityoObject || object->GetVelocity().y < lowestYVelocityoObject->GetVelocity().y)
-            {
-                lowestYVelocityoObject = object;                  
-            }
-        }
-
-        if (lowestYVelocityoObject)
-        {
-            bool isPlatform = (lowestYVelocityoObject->GetType() == static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM));
-            if ((isPlatform && !mTimers.at("platform skip").IsActive()) || !isPlatform)
-            {
-                mHitbox.SetBottom(lowestYVelocityoObject->GetHitbox().GetTop());
-                mDirection.y = 0; 
-                mSurfaceState["floor"] = true;
-                  
-                if (isPlatform)
-                {
-                    mPlatformId = lowestYVelocityoObject->GetEntityId();
-                }
-
-                //if (isPlatform)
-                //{
-                
-                //}
-                //else
-                  //{
-                //    mHitbox.SetBottom(lowestYVelocityoObject->GetHitbox().GetTop());
-                //    mDirection.y = 0;
-                //    mSurfaceState["floor"] = true;
-                //    
-                //    mPlatformId = lowestYVelocityoObject->GetEntityId();
-                //}
-            }
-            else if (isPlatform)
-            {
-                std::cout << lowestYVelocityoObject->GetVelocity().y << std::endl;
-                mHitbox.SetBottom(lowestYVelocityoObject->GetHitbox().GetTop() + 2);
-                mDirection.y = 0;
-            }
-
-/*            else
-            {
-                mHitbox.SetBottom(lowestYVelocityoObject->GetHitbox().GetTop());
-                mDirection.y = 0;
-                mSurfaceState["floor"] = true;
-
-                if (isPlatform)
-                {
-                    mPlatformId = lowestYVelocityoObject->GetEntityId();
-                }
-            }  */                      
-        }
-
-        // Resolve ceiling objects
-        const GameObject* highestYVelocityObject = nullptr;
-        for (const GameObject* object : objectsAbove)
-        {
-            if (!highestYVelocityObject || object->GetVelocity().y > highestYVelocityObject->GetVelocity().y)
-            {
-                highestYVelocityObject = object;
-            }
-        }
-
-        if (highestYVelocityObject)
-        {
-            // Allow jump through platforms
-            if (highestYVelocityObject->GetType() != static_cast<uint32_t>(SpritTypes::MOVING_PLATFORM))
-            {
-                mHitbox.SetTop(highestYVelocityObject->GetHitbox().GetBottom());
-                mDirection.y = highestYVelocityObject->GetVelocity().y;
             }
         }
     }
@@ -530,12 +406,8 @@ private:
     float mJumpHeight;
     bool mIsJumping;
     bool mIsAttacking;
-    bool mIsFacingRight;
+    bool mPrvSpaceKeyPress = false;
+    bool mCntSpaceKeyPress = false;
     std::unordered_map<std::string, bool> mSurfaceState;
     std::unordered_map<std::string, Timer> mTimers;
-    uint32_t mPlatformId;
-
-    bool prvSpaceKeyPress = false;
-    bool cntSpaceKeyPress = false;
-    mutable std::vector<const GameObject*> objectsBelow;
 };
