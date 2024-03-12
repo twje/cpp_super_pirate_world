@@ -9,6 +9,7 @@
 // Core
 #include "Core/DrawUtils.h"
 #include "Core/GameObjectManager.h"
+#include "Core/Timer.h"
 
 //------------------------------------------------------------------------------
 class Player : public AnimatedSprite
@@ -40,8 +41,13 @@ public:
             { "right", false },
         };
 
+        mTimers = {
+            { "wall jump", Timer(sf::milliseconds(400)) },
+            { "wall slide block", Timer(sf::milliseconds(250)) },
+        };
+
         SetOrigin(GetGlobalBounds().GetSize() * 0.5f);
-        Move(GetGlobalBounds().GetSize() * 0.5f);
+        GameObject::Move(GetGlobalBounds().GetSize() * 0.5f);
         mHitbox = InflateRect(GetGlobalBounds(), -76, -36);
         mPreviousHitbox = mHitbox;
     }
@@ -59,53 +65,13 @@ public:
     virtual void Update(const sf::Time& timeslice)
     {        
         mPreviousHitbox = mHitbox;
+        
+        UpdateTimers(timeslice);
         Input();
- 
-        GameObjectManager& manager = GameObjectManager::Instance();
-        
-        float deltaX = mDirection.x * mSpeed * timeslice.asSeconds();
-
-        // Handle moving platform
-        GameObject* platform = manager.GetInstance(mPlatformId);
-        if (mSurfaceState["floor"] && platform)
-        {
-            sf::Vector2f previousFramePlatformVelocity = platform->GetHitbox().GetPosition() - platform->GetPreviousHitbox().GetPosition();
-
-            if (previousFramePlatformVelocity.y > 0.0f)
-            {
-                mDirection.y += previousFramePlatformVelocity.y;
-                mHitbox.SetBottom(platform->GetHitbox().GetTop());
-            }
-            deltaX += previousFramePlatformVelocity.x;
-        }
-        
-        // Vert movement
-        if (mIsJumping)
-        {
-            if (mSurfaceState["floor"])
-            {
-                mDirection.y = -mJumpHeight;
-            }
-            mIsJumping = false;
-        }
-
-        mDirection.y += mGravity * 0.5f * timeslice.asSeconds();
-        // https://stackoverflow.com/questions/60198718/gravity-strength-and-jump-height-somehow-dependant-on-framerate-pygame
-        // This step accounts for the distance the object travels while accelerating
-        mHitbox.MoveY(mDirection.y * timeslice.asSeconds());
-        mDirection.y += mGravity * 0.5f * timeslice.asSeconds(); // TODO: investigate
-        
-        CheckAndResolveVertCollision();
-        
-        // Hort movement
-        mHitbox.MoveX(deltaX);
-        CheckAndResolveHortCollision();
-
-        SetPosition(mHitbox.GetCenter());   
+        Move(timeslice);
+        CheckWallContact();
     };
-
-    sf::Vector2f GetCameraCenter() { return GetGlobalBounds().GetCenter(); }
-
+   
     virtual void draw(sf::RenderTarget& target, const sf::RenderStates& states) const
     {        
         DrawRect<float>(target, CreateLeftWallCollider(), sf::Color::Green);
@@ -122,22 +88,39 @@ public:
         DrawRect<float>(target, floorIndicator, color);
     }
 
+    sf::Vector2f GetCameraCenter() { return GetGlobalBounds().GetCenter(); }
+
 private:
+    void UpdateTimers(const sf::Time& timeslice)
+    {
+        for (auto& [_, timer] : mTimers)
+        {
+            timer.Update(timeslice);
+            if (timer.IsFinished())
+            {
+                timer.Reset(false);
+            }
+        }
+    }
+
     void Input()
     {
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+        if (!mTimers.at("wall jump").IsActive())
         {
-            mDirection.x = 1.0f;
-            mIsFacingRight = true;
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
-        {
-            mDirection.x = -1.0f;
-            mIsFacingRight = false;
-        }
-        else
-        {
-            mDirection.x = 0.0f;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+            {
+                mDirection.x = 1.0f;
+                mIsFacingRight = true;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
+            {
+                mDirection.x = -1.0f;
+                mIsFacingRight = false;
+            }
+            else
+            {
+                mDirection.x = 0.0f;
+            }
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space))
@@ -145,6 +128,100 @@ private:
             mIsJumping = true;
         }
     }    
+
+    void Move(const sf::Time& timeslice)
+    {
+        GameObjectManager& manager = GameObjectManager::Instance();
+        
+        // Handle moving platform
+        sf::Vector2f previousFramePlatformVelocity;
+        float deltaX = 0.0f;
+
+        GameObject* platform = manager.GetInstance(mPlatformId);
+        if (mSurfaceState["floor"] && platform)
+        {
+            previousFramePlatformVelocity = platform->GetHitbox().GetPosition() - platform->GetPreviousHitbox().GetPosition();
+
+            if (previousFramePlatformVelocity.y > 0.0f)
+            {
+                mDirection.y += previousFramePlatformVelocity.y;
+                mHitbox.SetBottom(platform->GetHitbox().GetTop());
+            }
+            deltaX += previousFramePlatformVelocity.x;
+        }
+
+        // Vert movement
+        if (IsWallSliding() && !mTimers.at("wall slide block").IsActive())
+        {
+            mDirection.y = 0.0f;
+            mHitbox.MoveY(mGravity / 10.0f * timeslice.asSeconds());
+        }
+        else
+        {
+            mDirection.y += mGravity * 0.5f * timeslice.asSeconds();
+            // https://stackoverflow.com/questions/60198718/gravity-strength-and-jump-height-somehow-dependant-on-framerate-pygame
+            // This step accounts for the distance the object travels while accelerating
+            mHitbox.MoveY(mDirection.y * timeslice.asSeconds());
+            mDirection.y += mGravity * 0.5f * timeslice.asSeconds(); // TODO: investigate
+        }
+
+        if (mIsJumping)
+        {
+            // Wall jump
+            if (IsWallSliding() && !mTimers.at("wall slide block").IsActive())
+            {
+                mTimers.at("wall jump").Start();  // Temporarily disable user input
+                mDirection.y = -mJumpHeight;
+                mDirection.x = mSurfaceState.at("left") ? 1.0f : -1.0f;  // Bounce off wall in opposite direction
+            }
+            // Ordinary jump
+            else if (mSurfaceState["floor"])
+            {
+                // Unstick from floor or platform to enable jump
+                mHitbox.MoveY(-1);
+                if (previousFramePlatformVelocity.y < 0.0f)
+                {
+                    mHitbox.MoveY(previousFramePlatformVelocity.y);
+                }
+                mDirection.y = -mJumpHeight;
+                mTimers.at("wall slide block").Start();
+            }
+            mIsJumping = false;
+        }
+           
+        CheckAndResolveVertCollision();
+
+        // Hort movement
+        deltaX += mDirection.x * mSpeed * timeslice.asSeconds();
+        mHitbox.MoveX(deltaX);
+        CheckAndResolveHortCollision();
+
+        SetPosition(mHitbox.GetCenter());
+    }
+
+    void CheckWallContact()
+    {
+        mSurfaceState["left"] = false;
+        mSurfaceState["right"] = false;
+
+        FloatRect leftWallCollider = CreateLeftWallCollider();
+        FloatRect rightWallCollider = CreateRightWallCollider();
+
+        for (GameObject* object : mCollisionSprites)
+        {
+            FloatRect objectHitbox = object->GetHitbox();
+            if (leftWallCollider.FindIntersection(objectHitbox))
+            {
+                mSurfaceState["left"] = true;
+                break;
+            }
+            if (rightWallCollider.FindIntersection(objectHitbox))
+            {
+                mSurfaceState["right"] = true;
+                break;
+            }
+        }
+    }
 
     void Animate(const sf::Time& timeslice)
     {
@@ -275,6 +352,8 @@ private:
         }
     }
 
+    bool IsWallSliding() { return !mSurfaceState["floor"] && (mSurfaceState["left"] || mSurfaceState["right"]); }
+
     FloatRect mHitbox;
     FloatRect mPreviousHitbox;
     Group& mCollisionSprites;
@@ -288,5 +367,6 @@ private:
     bool mIsAttacking;
     bool mIsFacingRight;
     std::unordered_map<std::string, bool> mSurfaceState;
+    std::unordered_map<std::string, Timer> mTimers;
     uint32_t mPlatformId;
 };

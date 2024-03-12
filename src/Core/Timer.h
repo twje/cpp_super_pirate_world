@@ -22,6 +22,7 @@ public:
 	void Finish();
 	void Reset(bool play);	
 
+	bool IsActive();
 	bool IsFinished();	
 	float PercentComplete();	
 	void SetDuration(const sf::Time& duration);

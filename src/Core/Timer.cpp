@@ -41,6 +41,12 @@ void Timer::Reset(bool play)
 }
 
 //------------------------------------------------------------------------------
+bool Timer::IsActive()
+{
+	return mActive;
+}
+
+//------------------------------------------------------------------------------
 bool Timer::IsFinished()
 {
 	return mElapsedTime >= mDuration.asSeconds();
